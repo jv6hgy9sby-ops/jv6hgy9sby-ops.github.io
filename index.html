@@ -1752,7 +1752,7 @@ kbd {
         <kbd id="prompt-key">E</kbd>
       </div>
 
-      <div id="thought-bubble" class="thought-bubble is-hidden">Я пять минут не ел.</div>
+      <div id="thought-bubble" class="thought-bubble is-hidden" aria-hidden="true"></div>
       <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
       <div id="achievement-banner" class="achievement-banner is-hidden" aria-live="assertive">
         <span>🏆</span>
@@ -2128,16 +2128,66 @@ kbd {
       this.context = null;
       this.enabled = save.sound !== false;
       this.lastStep = 0;
+      this.voice = null;
+      this.utterance = null;
+      this.lastSpeechText = "";
+      this.lastSpeechAt = 0;
     }
 
     init() {
       if (!this.enabled) return;
+      this.prepareVoice();
       if (!this.context) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         this.context = new AudioContext();
       }
       if (this.context.state === "suspended") this.context.resume().catch(() => {});
+    }
+
+    prepareVoice() {
+      if (!this.canSpeak()) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      const russian = voices.filter((voice) => /^ru(?:-|_)/i.test(voice.lang));
+      const lowVoice = /yuri|yuriy|юрий|dmitri|dmitry|дмитрий|maxim|максим|pavel|павел/i;
+      this.voice = russian.find((voice) => lowVoice.test(voice.name))
+        || russian[0]
+        || voices.find((voice) => /^ru(?:-|_)/i.test(voice.lang))
+        || null;
+    }
+
+    canSpeak() {
+      return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+    }
+
+    speak(text, interrupt = true) {
+      if (!this.enabled || !text || !this.canSpeak()) return;
+      const now = performance.now();
+      if (text === this.lastSpeechText && now - this.lastSpeechAt < 1800) return;
+      this.lastSpeechText = text;
+      this.lastSpeechAt = now;
+      this.prepareVoice();
+
+      const phrase = new SpeechSynthesisUtterance(text);
+      phrase.lang = "ru-RU";
+      phrase.rate = 0.9;
+      phrase.pitch = 0.72;
+      phrase.volume = 1;
+      if (this.voice) phrase.voice = this.voice;
+      this.utterance = phrase;
+      phrase.onend = () => {
+        if (this.utterance === phrase) this.utterance = null;
+      };
+
+      if (interrupt) window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      window.speechSynthesis.speak(phrase);
+    }
+
+    stopSpeech() {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      this.utterance = null;
     }
 
     tone(freq, duration = 0.08, volume = 0.035, type = "sine", endFreq = null, delay = 0) {
@@ -2227,12 +2277,20 @@ kbd {
       this.enabled = !this.enabled;
       save.sound = this.enabled;
       saveGame();
-      if (this.enabled) this.init();
+      if (this.enabled) {
+        this.init();
+        this.speak("Я снова говорю.");
+      } else {
+        this.stopSpeech();
+      }
       updateSoundButton();
     }
   }
 
   const sound = new SoundSystem();
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.addEventListener?.("voiceschanged", () => sound.prepareVoice());
+  }
 
   function loadSave() {
     try {
@@ -2252,7 +2310,7 @@ kbd {
 
   function updateSoundButton() {
     els.sound.textContent = sound.enabled ? "🔊" : "🔇";
-    els.sound.setAttribute("aria-label", sound.enabled ? "Выключить звук" : "Включить звук");
+    els.sound.setAttribute("aria-label", sound.enabled ? "Выключить звук и голос" : "Включить звук и голос");
   }
 
   function roundedRectPath(g, x, y, w, h, r) {
@@ -2630,12 +2688,14 @@ kbd {
     els.achievement.classList.add("is-hidden");
     els.happy.classList.add("is-hidden");
     els.mobile.classList.add("is-hidden");
+    sound.stopSpeech();
     updateRecordSummary();
   }
 
   function togglePause(force) {
     if (!state.running || state.mini === "petting") return;
     state.paused = typeof force === "boolean" ? force : !state.paused;
+    if (state.paused) sound.stopSpeech();
     els.pauseScreen.classList.toggle("is-hidden", !state.paused);
     els.prompt.classList.add("is-hidden");
     updateMobileControls();
@@ -2933,10 +2993,11 @@ kbd {
     if (nearest?.id !== state.currentInteraction?.id) {
       state.currentInteraction = nearest;
       state.promptPhrase = nearest ? choose(PHRASES[nearest.id]) : "";
+      if (nearest) sound.speak(state.promptPhrase);
     }
 
     if (nearest) {
-      els.promptText.textContent = state.promptPhrase;
+      els.promptText.textContent = sound.enabled && sound.canSpeak() ? "Матвей просит" : state.promptPhrase;
       els.promptKey.textContent = isCoarse ? "ЛАПА" : "E";
       els.prompt.classList.remove("is-hidden");
     } else {
@@ -3357,9 +3418,14 @@ kbd {
   }
 
   function showThought(text, seconds = 2.5) {
-    els.thought.textContent = text;
-    els.thought.classList.remove("is-hidden");
     state.thoughtUntil = Math.max(state.thoughtUntil, state.elapsed + seconds);
+    if (sound.enabled && sound.canSpeak()) {
+      els.thought.classList.add("is-hidden");
+      sound.speak(text);
+    } else {
+      els.thought.textContent = text;
+      els.thought.classList.remove("is-hidden");
+    }
   }
 
   function updateThought() {
@@ -3370,6 +3436,10 @@ kbd {
     if (state.elapsed >= state.nextThought && !matvey.action) {
       showThought(choose(THOUGHTS), random(2.2, 3.2));
       state.nextThought = state.elapsed + random(11, 19);
+    }
+    if (sound.enabled && sound.canSpeak()) {
+      els.thought.classList.add("is-hidden");
+      return;
     }
     if (state.elapsed > state.thoughtUntil) {
       els.thought.classList.add("is-hidden");
