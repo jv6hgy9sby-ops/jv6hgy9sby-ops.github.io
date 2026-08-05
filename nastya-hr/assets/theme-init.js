@@ -6,6 +6,7 @@
   var lightColor="#FAF7F2";
   var darkColor="#1F2328";
   var saved=null;
+  var assetVersion="20260805-1";
 
   try{
     saved=localStorage.getItem(storageKey);
@@ -38,13 +39,26 @@
     }
   }
 
-  document.querySelectorAll('link[rel="icon"]').forEach(function(link){link.remove();});
-  ensureLink("icon","assets/brand/favicon-32.png",{type:"image/png",sizes:"32x32"});
-  ensureLink("apple-touch-icon","assets/brand/apple-touch-icon.png",{sizes:"180x180"});
-  ensureLink("manifest","site.webmanifest");
+  function appendStylesheet(href){
+    var link=document.createElement("link");
+    link.rel="stylesheet";
+    link.href=href;
+    document.head.appendChild(link);
+  }
 
-  var navigationScript=document.createElement("script");
-  navigationScript.src="assets/navigation-extension.js";
-  navigationScript.defer=true;
-  document.head.appendChild(navigationScript);
+  function appendScript(src){
+    var script=document.createElement("script");
+    script.src=src;
+    script.defer=true;
+    document.head.appendChild(script);
+  }
+
+  document.querySelectorAll('link[rel="icon"]').forEach(function(link){link.remove();});
+  ensureLink("icon","assets/brand/favicon-32.png?v="+assetVersion,{type:"image/png",sizes:"32x32"});
+  ensureLink("apple-touch-icon","assets/brand/apple-touch-icon.png?v="+assetVersion,{sizes:"180x180"});
+  ensureLink("manifest","site.webmanifest?v="+assetVersion);
+
+  appendStylesheet("assets/mobile-fixes.css?v="+assetVersion);
+  appendScript("assets/navigation-extension.js?v="+assetVersion);
+  appendScript("assets/mobile-fixes.js?v="+assetVersion);
 })();
