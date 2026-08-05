@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /nastya-hr/
+Disallow: /nastya-hr/backups/
+Disallow: /nastya-hr/index-backup.html
 
 Sitemap: https://jv6hgy9sby-ops.github.io/nastya-hr/sitemap.xml
