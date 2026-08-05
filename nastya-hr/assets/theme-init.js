@@ -39,7 +39,7 @@
   }
 
   document.querySelectorAll('link[rel="icon"]').forEach(function(link){link.remove();});
-  ensureLink("icon","assets/brand/favicon.svg",{type:"image/svg+xml"});
   ensureLink("icon","assets/brand/favicon-32.png",{type:"image/png",sizes:"32x32"});
   ensureLink("apple-touch-icon","assets/brand/apple-touch-icon.png",{sizes:"180x180"});
+  ensureLink("manifest","site.webmanifest");
 })();
