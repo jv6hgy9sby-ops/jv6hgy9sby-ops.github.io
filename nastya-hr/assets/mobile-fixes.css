@@ -15,14 +15,14 @@
     width:48px!important;
     height:48px!important;
     display:block!important;
-    background-image:url("brand/logo-anasteysha-mark-dark.svg?v=20260805-4");
+    background-image:url("brand/logo-anasteysha-mark-dark.svg?v=20260805-5");
     background-repeat:no-repeat;
     background-position:center;
     background-size:contain;
   }
 
   html[data-theme="dark"] .header-logo .site-logo__mark{
-    background-image:url("brand/logo-anasteysha-mark-light.svg?v=20260805-4");
+    background-image:url("brand/logo-anasteysha-mark-light.svg?v=20260805-5");
   }
 
   .header-logo .site-logo__mark .site-logo__image{
@@ -48,9 +48,9 @@
     width:100%!important;
     max-width:100%!important;
     margin:10px 0 12px!important;
-    font-size:clamp(1.78rem,8.8vw,2.38rem)!important;
-    line-height:.99!important;
-    letter-spacing:-.035em!important;
+    font-size:clamp(1.96rem,9.8vw,2.72rem)!important;
+    line-height:.97!important;
+    letter-spacing:-.04em!important;
     -webkit-hyphens:none!important;
     hyphens:none!important;
     word-break:normal!important;
@@ -61,6 +61,10 @@
   .hero-title__line{
     display:block;
     white-space:nowrap;
+  }
+
+  .hero-title__line:first-child{
+    white-space:normal;
   }
 
   .hero-copy .lead{
@@ -168,12 +172,6 @@
 @media (max-width:360px){
   .hero-home{
     padding-top:24px!important;
-  }
-
-  .hero-copy h1,
-  .hero-copy .hero-title{
-    font-size:clamp(1.72rem,8.7vw,1.98rem)!important;
-    line-height:1!important;
   }
 
   .hero-copy .lead{
