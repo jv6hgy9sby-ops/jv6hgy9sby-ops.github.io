@@ -29,7 +29,6 @@
         '<div class="container header-inner">'+
           '<div class="brand-lockup">'+
             '<a class="logo" href="index.html" aria-label="Anasteysha — главная">Anasteysha</a>'+
-            '<span class="brand-descriptor" aria-hidden="true">HR · Recruiting · Operations</span>'+
           '</div>'+
           '<nav class="desktop-nav" aria-label="Основная навигация">'+navLinks()+'</nav>'+
           '<div class="header-actions">'+
