@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /nastya-hr/
+
+Sitemap: https://jv6hgy9sby-ops.github.io/nastya-hr/sitemap.xml
