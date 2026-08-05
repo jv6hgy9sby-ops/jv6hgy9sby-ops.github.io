@@ -7,7 +7,7 @@
   var headerHost=document.querySelector("[data-site-header]");
   var footerHost=document.querySelector("[data-site-footer]");
   var themeStorageKey="anasteysha-theme";
-  var themeColors={light:"#F6F1E8",dark:"#181715"};
+  var themeColors={light:"#FAF7F2",dark:"#1F2328"};
   var nav=[
     {href:"education.html",label:"Специалистам",pages:["education"]},
     {href:"mentoring.html",label:"Наставничество",pages:["mentoring"]},
@@ -29,6 +29,21 @@
     }).join("");
   }
 
+  function brandLogo(extraClass,footer){
+    var className="site-logo"+(extraClass?" "+extraClass:"");
+    var darkAlt=footer?"":"Anasteysha — HR, Recruiting, Operations";
+    return '<a class="'+className+'" href="index.html" aria-label="Anasteysha — главная">'+
+      '<span class="site-logo__full">'+
+        '<img class="site-logo__image site-logo__image--light-theme" src="assets/brand/logo-anasteysha-dark.png" width="640" height="176" alt="'+darkAlt+'">'+
+        '<img class="site-logo__image site-logo__image--dark-theme" src="assets/brand/logo-anasteysha-light.png" width="640" height="176" alt="" aria-hidden="true">'+
+      '</span>'+
+      '<span class="site-logo__mark">'+
+        '<img class="site-logo__image site-logo__image--light-theme" src="assets/brand/logo-anasteysha-mark-dark.png" width="160" height="160" alt="'+darkAlt+'">'+
+        '<img class="site-logo__image site-logo__image--dark-theme" src="assets/brand/logo-anasteysha-mark-light.png" width="160" height="160" alt="" aria-hidden="true">'+
+      '</span>'+
+    '</a>';
+  }
+
   function themeButton(extraClass){
     return '<button class="theme-switch '+(extraClass||"")+'" type="button" data-theme-toggle aria-label="Переключить на тёмную тему" aria-pressed="false">'+
       '<span class="theme-switch-track" aria-hidden="true">'+
@@ -43,7 +58,7 @@
     headerHost.innerHTML=
       '<header class="site-header" id="siteHeader">'+
         '<div class="container header-inner">'+
-          '<a class="logo" href="index.html" aria-label="Anasteysha — главная">Anasteysha</a>'+
+          brandLogo("header-logo",false)+
           '<nav class="desktop-nav" aria-label="Основная навигация">'+navLinks()+'</nav>'+
           '<div class="header-actions">'+
             themeButton("header-theme-switch")+
@@ -64,7 +79,7 @@
       '<footer class="site-footer">'+
         '<div class="container">'+
           '<div class="footer-grid">'+
-            '<div class="footer-brand"><a class="logo" href="index.html">Anasteysha</a><p>Практический HR для специалистов, руководителей и команд: обучение, наставничество, рекрутинг, HR Operations и AI-инструменты для HR.</p></div>'+
+            '<div class="footer-brand">'+brandLogo("footer-logo",true)+'<p>Практический HR для специалистов, руководителей и команд: обучение, наставничество, рекрутинг, HR Operations и AI-инструменты для HR.</p></div>'+
             '<div class="footer-col"><h3>Направления</h3><div class="footer-links"><a href="education.html">Специалистам</a><a href="mentoring.html">Наставничество</a><a href="business.html">Компаниям</a><a href="solutions.html">Решения</a></div></div>'+
             '<div class="footer-col"><h3>База знаний</h3><div class="footer-links"><a href="materials.html">Шаблоны и материалы</a><a href="blog.html">Статьи</a><a href="about.html">О Насте</a><a href="contact.html">Контакты</a></div></div>'+
             '<div class="footer-col"><h3>Связь</h3><div class="footer-links"><span>Telegram — будет добавлен</span><span>Email — будет добавлен</span><span>Формат — онлайн</span><a href="privacy.html">Конфиденциальность</a></div></div>'+
