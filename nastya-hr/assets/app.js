@@ -11,7 +11,7 @@
     ["education","education.html","Обучение"],
     ["mentoring","mentoring.html","Наставничество"],
     ["business","business.html","Для бизнеса"],
-    ["solutions","solutions.html","Решения"],
+    ["solutions","solutions.html","Примеры решений"],
     ["materials","materials.html","Материалы"],
     ["blog","blog.html","Блог"],
     ["contact","contact.html","Контакты"]
@@ -68,11 +68,13 @@
 
   function lockScroll(){
     lockedScrollY=window.scrollY||0;
+    var scrollbarWidth=Math.max(0,window.innerWidth-document.documentElement.clientWidth);
     body.style.position="fixed";
     body.style.top="-"+lockedScrollY+"px";
     body.style.left="0";
     body.style.right="0";
     body.style.width="100%";
+    body.style.paddingRight=scrollbarWidth?scrollbarWidth+"px":"";
   }
 
   function unlockScroll(){
@@ -81,6 +83,7 @@
     body.style.left="";
     body.style.right="";
     body.style.width="";
+    body.style.paddingRight="";
     window.scrollTo(0,lockedScrollY);
   }
 
@@ -186,23 +189,26 @@
   initFilter(".article-filter",".article","data-article-filter");
   initFilter(".solution-filter",".solution-item, .featured-solution","data-solution-filter");
 
-  function setAccordion(article,open){
-    var summary=article.querySelector(".article-summary,.solution-summary");
-    var panel=article.querySelector(".article-body,.solution-body");
+  function setAccordion(item,open){
+    var summary=item.querySelector(".article-summary,.solution-summary");
+    var panel=item.querySelector(".article-body,.solution-body");
     if(!summary||!panel)return;
-    article.classList.toggle("open",open);
+    item.classList.toggle("open",open);
     summary.setAttribute("aria-expanded",String(open));
+    panel.setAttribute("aria-hidden",String(!open));
     panel.style.maxHeight=open?panel.scrollHeight+"px":"0px";
   }
 
   var accordions=document.querySelectorAll(".article,.solution-item");
-  accordions.forEach(function(article){
-    var summary=article.querySelector(".article-summary,.solution-summary");
+  accordions.forEach(function(item){
+    var summary=item.querySelector(".article-summary,.solution-summary");
+    var panel=item.querySelector(".article-body,.solution-body");
+    if(panel){panel.setAttribute("aria-hidden","true");}
     if(!summary)return;
     summary.addEventListener("click",function(){
-      var open=!article.classList.contains("open");
-      setAccordion(article,open);
-      if(open&&article.id){history.replaceState(null,"","#"+article.id);}
+      var open=!item.classList.contains("open");
+      setAccordion(item,open);
+      if(open&&item.id){history.replaceState(null,"","#"+item.id);}
     });
   });
 
@@ -219,36 +225,11 @@
   window.addEventListener("hashchange",openHashTarget);
 
   var demoData={
-    vacancy:{
-      prompt:"Подготовь бриф для вакансии менеджера по продажам. В исходном запросе есть только фраза: «Нужен сильный менеджер, желательно срочно».",
-      title:"Сначала нужно уточнить контекст",
-      points:["Продукт, рынок и основные задачи роли","Структура команды и подчинение","Must-have и nice-to-have","Формат работы и этапы интервью","Критерии решения и риски поиска"],
-      check:"После ответов HR проверяет бриф и утверждает критерии вместе с руководителем."
-    },
-    onboarding:{
-      prompt:"Собери onboarding-чек-лист для нового сотрудника на удалённой позиции.",
-      title:"Маршрут адаптации",
-      points:["До выхода: доступы, документы, техника и welcome-сообщение","Первый день: знакомство, роль, команда и каналы связи","Первая неделя: задачи, обучение и контрольная встреча","Первый месяц: критерии адаптации и обратная связь"],
-      check:"Ответственные, сроки и содержание задач подтверждаются HR и руководителем."
-    },
-    interview:{
-      prompt:"Подготовь структуру интервью для роли, где важны системность и коммуникация.",
-      title:"Структура интервью",
-      points:["Вводный блок и контекст кандидата","Вопросы по конкретным ситуациям","Уточнения: действия, решения и результат","Evidence matrix для фиксации фактов","Вопросы кандидата и следующие шаги"],
-      check:"AI не оценивает человека и не принимает решение о найме."
-    },
-    communication:{
-      prompt:"Составь нейтральное сообщение сотруднику о переносе встречи 1:1.",
-      title:"Черновик сообщения",
-      points:["Коротко назвать изменение","Предложить новый временной слот","Сохранить уважительный и спокойный тон","Указать, что сотрудник может предложить другой вариант"],
-      check:"Перед отправкой HR проверяет контекст, адресата и тон сообщения."
-    },
-    process:{
-      prompt:"Разбери процесс offboarding и покажи контрольные точки.",
-      title:"Структура offboarding",
-      points:["Подтверждение даты и плана передачи задач","Коммуникации с сотрудником и командой","Возврат доступов и оборудования","Документы и финальные действия","Exit interview и закрытие процесса"],
-      check:"Юридические и финансовые действия проверяются ответственными специалистами."
-    }
+    vacancy:{prompt:"Подготовь бриф для вакансии менеджера по продажам. В исходном запросе есть только фраза: «Нужен сильный менеджер, желательно срочно».",title:"Сначала нужно уточнить контекст",points:["Продукт, рынок и основные задачи роли","Структура команды и подчинение","Must-have и nice-to-have","Формат работы и этапы интервью","Критерии решения и риски поиска"],check:"После ответов HR проверяет бриф и утверждает критерии вместе с руководителем."},
+    onboarding:{prompt:"Собери onboarding-чек-лист для нового сотрудника на удалённой позиции.",title:"Маршрут адаптации",points:["До выхода: доступы, документы, техника и welcome-сообщение","Первый день: знакомство, роль, команда и каналы связи","Первая неделя: задачи, обучение и контрольная встреча","Первый месяц: критерии адаптации и обратная связь"],check:"Ответственные, сроки и содержание задач подтверждаются HR и руководителем."},
+    interview:{prompt:"Подготовь структуру интервью для роли, где важны системность и коммуникация.",title:"Структура интервью",points:["Вводный блок и контекст кандидата","Вопросы по конкретным ситуациям","Уточнения: действия, решения и результат","Evidence matrix для фиксации фактов","Вопросы кандидата и следующие шаги"],check:"AI не оценивает человека и не принимает решение о найме."},
+    communication:{prompt:"Составь нейтральное сообщение сотруднику о переносе встречи 1:1.",title:"Черновик сообщения",points:["Коротко назвать изменение","Предложить новый временной слот","Сохранить уважительный и спокойный тон","Указать, что сотрудник может предложить другой вариант"],check:"Перед отправкой HR проверяет контекст, адресата и тон сообщения."},
+    process:{prompt:"Разбери процесс offboarding и покажи контрольные точки.",title:"Структура offboarding",points:["Подтверждение даты и плана передачи задач","Коммуникации с сотрудником и командой","Возврат доступов и оборудования","Документы и финальные действия","Exit interview и закрытие процесса"],check:"Юридические и финансовые действия проверяются ответственными специалистами."}
   };
 
   var demoOutput=document.getElementById("demoOutput");
