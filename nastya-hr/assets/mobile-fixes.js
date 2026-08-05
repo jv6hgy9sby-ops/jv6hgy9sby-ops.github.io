@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  var assetVersion="20260805-4";
+  var assetVersion="20260805-5";
   var paths={
     dark:"assets/brand/logo-anasteysha-mark-dark.svg?v="+assetVersion,
     light:"assets/brand/logo-anasteysha-mark-light.svg?v="+assetVersion,
