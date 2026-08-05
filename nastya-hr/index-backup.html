@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NASTYA·HR</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unbounded/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unbounded/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unbounded/700.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/700.css">
+<style>
+:root{
+  --milk:#f8f5ee;
+  --milk-2:#fffdf8;
+  --graphite:#232323;
+  --graphite-soft:#5f5c55;
+  --gold:#c9a45c;
+  --gold-deep:#a97f2f;
+  --line:rgba(35,35,35,.12);
+  --shadow:0 20px 50px rgba(35,35,35,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:100px}
+[id]{scroll-margin-top:100px}
+body{font-family:'Manrope',system-ui,sans-serif;background:var(--milk);color:var(--graphite);line-height:1.65;overflow-x:hidden}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+button{font:inherit;background:none;border:none;cursor:pointer;color:inherit}
+::selection{background:var(--gold);color:#fff}
+.container{width:min(1160px,92%);margin:0 auto}
+.overline{display:inline-flex;align-items:center;gap:12px;font-size:.75rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+.overline::before{content:"";width:36px;height:1px;background:var(--gold-deep)}
+h1,h2,h3{font-family:'Unbounded',sans-serif;font-weight:500;line-height:1.2}
+h2{font-size:clamp(1.45rem,3vw,2.2rem);margin-top:14px}
+.section{padding:96px 0}
+.section-head{margin-bottom:52px;max-width:680px}
+.section-head p{color:var(--graphite-soft);margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:16px 30px;border-radius:999px;background:linear-gradient(135deg,#d7b46e,#a97f2f);color:#fff;font-weight:700;font-size:.95rem;letter-spacing:.02em;box-shadow:0 14px 32px rgba(169,127,47,.32);transition:transform .25s,box-shadow .25s;white-space:nowrap}
+.btn:hover{transform:translateY(-3px);box-shadow:0 20px 40px rgba(169,127,47,.4)}
+.btn.ghost{background:transparent;color:var(--graphite);border:1.5px solid rgba(35,35,35,.28);box-shadow:none}
+.btn.ghost:hover{border-color:var(--gold-deep);color:var(--gold-deep)}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(248,245,238,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:box-shadow .3s;padding-top:env(safe-area-inset-top)}
+header.scrolled{box-shadow:0 10px 30px rgba(35,35,35,.08)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;height:78px;gap:20px}
+.logo{font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.02rem;letter-spacing:.08em}
+.logo span{color:var(--gold-deep)}
+.nav{display:flex;gap:26px}
+.nav a{font-size:.9rem;font-weight:600;color:var(--graphite-soft);position:relative;padding:6px 0}
+.nav a::after{content:"";position:absolute;left:0;bottom:0;width:0;height:1.5px;background:var(--gold-deep);transition:width .3s}
+.nav a:hover{color:var(--graphite)}
+.nav a:hover::after{width:100%}
+.header-cta{padding:12px 22px;font-size:.85rem}
+.burger{display:none;flex-direction:column;gap:6px;width:44px;height:44px;align-items:center;justify-content:center;border-radius:12px;z-index:70;position:relative}
+.burger i{display:block;width:22px;height:2px;background:var(--graphite);transition:transform .35s,opacity .35s}
+body.menu-open .burger i:nth-child(1){transform:translateY(8px) rotate(45deg)}
+body.menu-open .burger i:nth-child(2){opacity:0}
+body.menu-open .burger i:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+.mobile-menu{position:fixed;inset:0;background:var(--milk);z-index:60;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;padding:calc(82px + env(safe-area-inset-top)) 6% calc(28px + env(safe-area-inset-bottom));gap:2px;transform:translateY(-102%);transition:transform .5s cubic-bezier(.7,0,.3,1);visibility:hidden;overflow-y:auto}
+body.menu-open .mobile-menu{transform:none;visibility:visible}
+.mobile-menu a{font-family:'Unbounded',sans-serif;font-size:clamp(1.02rem,4.6vw,1.3rem);font-weight:500;padding:13px 2px;border-bottom:1px solid var(--line)}
+.mobile-menu a:hover{color:var(--gold-deep)}
+.mobile-menu .btn{margin-top:24px;width:100%;max-width:100%;box-sizing:border-box;padding:16px 20px;font-size:clamp(.85rem,4vw,1rem);white-space:normal;text-align:center;align-self:stretch}
+body.menu-open{overflow:hidden}
+.hero{padding:150px 0 90px;position:relative}
+.hero::before{content:"";position:absolute;top:-140px;right:-180px;width:520px;height:520px;border-radius:50%;border:1px solid rgba(201,164,92,.35);pointer-events:none}
+.hero::after{content:"";position:absolute;top:-60px;right:-100px;width:360px;height:360px;border-radius:50%;border:1px solid rgba(201,164,92,.25);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center}
+.hero h1{font-size:clamp(1.85rem,4.2vw,3.1rem);margin:20px 0 22px}
+.hero h1 em{font-style:normal;color:var(--gold-deep)}
+.lead{color:var(--graphite-soft);max-width:520px;font-size:1.05rem}
+.hero-actions{display:flex;gap:14px;margin:32px 0 40px;flex-wrap:wrap}
+.hero-stats{display:flex;gap:44px;flex-wrap:wrap}
+.stat b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.5rem;color:var(--gold-deep)}
+.stat span{font-size:.85rem;color:var(--graphite-soft)}
+.hero-photo{position:relative;z-index:1}
+.hero-photo::before{content:"";position:absolute;inset:0;transform:translate(18px,18px);border:1.5px solid var(--gold);border-radius:28px;pointer-events:none}
+.hero-photo .frame{border-radius:28px;overflow:hidden;box-shadow:var(--shadow)}
+.hero-photo img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 20%}
+.hero-badge{position:absolute;left:-26px;bottom:42px;background:var(--milk-2);border-radius:18px;padding:14px 22px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+.hero-badge .star{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d7b46e,#a97f2f);color:#fff;display:grid;place-items:center;font-size:1.1rem;flex:0 0 auto}
+.hero-badge b{font-family:'Unbounded',sans-serif;font-size:.95rem;display:block}
+.hero-badge small{color:var(--graphite-soft);font-size:.78rem}
+.marquee{background:var(--graphite);color:var(--milk-2);overflow:hidden;padding:18px 0;transform:rotate(-1.4deg);width:104vw;margin-left:-2vw}
+.marquee-track{display:flex;width:max-content;animation:marquee 30s linear infinite}
+.mq-group{display:flex;align-items:center;gap:30px;padding-right:30px;white-space:nowrap}
+.mq-group span{font-family:'Unbounded',sans-serif;font-size:.9rem;letter-spacing:.14em}
+.mq-group i{color:var(--gold);font-style:normal}
+@keyframes marquee{to{transform:translateX(-50%)}}
+.about-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:center}
+.about-photo{position:relative}
+.about-photo .frame{border-radius:26px;overflow:hidden;box-shadow:var(--shadow)}
+.about-photo img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 25%}
+.about-photo::after{content:"✦";position:absolute;top:-24px;right:-18px;font-size:2.6rem;color:var(--gold)}
+.about-text p{color:var(--graphite-soft);margin-bottom:16px}
+.facts{margin:26px 0 30px;display:grid;gap:12px}
+.facts li{display:flex;gap:12px;align-items:flex-start;font-weight:600}
+.facts li::before{content:"✦";color:var(--gold-deep);flex:0 0 auto;margin-top:2px}
+.signature{font-family:'Unbounded',sans-serif;color:var(--gold-deep);font-size:1rem}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.dir-card{background:var(--milk-2);border:1px solid var(--line);border-radius:22px;padding:30px;transition:transform .3s,box-shadow .3s}
+.dir-card:hover{transform:translateY(-8px);box-shadow:var(--shadow)}
+.dir-num{font-family:'Unbounded',sans-serif;color:var(--gold-deep);font-size:.85rem;letter-spacing:.1em}
+.dir-card h3{font-size:1.05rem;margin:14px 0 10px}
+.dir-card p{color:var(--graphite-soft);font-size:.92rem}
+.course-card{background:var(--milk-2);border:1px solid var(--line);border-radius:26px;padding:34px;display:flex;flex-direction:column;position:relative;transition:transform .3s,box-shadow .3s}
+.course-card:hover{transform:translateY(-8px);box-shadow:var(--shadow)}
+.course-card.hit{border:1.5px solid var(--gold);box-shadow:var(--shadow)}
+.badge-hit{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#d7b46e,#a97f2f);color:#fff;font-weight:700;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:7px 18px;border-radius:999px}
+.course-tag{font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+.course-card h3{font-size:1.2rem;margin:12px 0 6px}
+.course-meta{color:var(--graphite-soft);font-size:.88rem;margin-bottom:18px}
+.price-line{font-family:'Unbounded',sans-serif;font-weight:500;font-size:1rem;color:var(--gold-deep);margin-bottom:20px}
+.course-list{display:grid;gap:10px;margin-bottom:28px}
+.course-list li{display:flex;gap:10px;font-size:.92rem;color:var(--graphite-soft)}
+.course-list li::before{content:"✦";color:var(--gold-deep);font-size:.8rem;margin-top:3px}
+.course-card .btn{margin-top:auto;width:100%}
+.free-card{background:var(--milk-2);border:1px solid var(--line);border-radius:22px;padding:30px;display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s}
+.free-card:hover{transform:translateY(-8px);box-shadow:var(--shadow)}
+.free-icon{width:54px;height:54px;border-radius:50%;background:rgba(201,164,92,.16);color:var(--gold-deep);display:grid;place-items:center;font-size:1.3rem;margin-bottom:18px}
+.free-card h3{font-size:1.02rem;margin-bottom:10px}
+.free-card p{color:var(--graphite-soft);font-size:.92rem;margin-bottom:24px}
+.free-card .btn{margin-top:auto;width:100%}
+.mentorship{background:var(--graphite);color:var(--milk-2)}
+.mentorship .overline{color:var(--gold)}
+.mentorship .overline::before{background:var(--gold)}
+.mentor-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center}
+.mentorship .mentor-copy p{color:rgba(255,253,248,.72)}
+.mentor-list{margin:28px 0 30px;display:grid;gap:14px}
+.mentor-list li{display:flex;gap:12px;font-weight:600}
+.mentor-list li::before{content:"✦";color:var(--gold);flex:0 0 auto}
+.mentor-price{font-family:'Unbounded',sans-serif;font-size:1.05rem;color:var(--gold);margin-bottom:30px}
+.mentor-photo{position:relative}
+.mentor-photo::before{content:"";position:absolute;inset:0;transform:translate(-16px,16px);border:1.5px solid var(--gold);border-radius:28px;pointer-events:none}
+.mentor-photo .frame{border-radius:28px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.4)}
+.mentor-photo img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 25%}
+.gallery-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+.g-item{position:relative;border-radius:22px;overflow:hidden}
+.g-item img{width:100%;height:440px;object-fit:cover;transition:transform .6s ease}
+.g-item.sea img{object-position:50% 45%}
+.g-item.car img{object-position:50% 30%}
+.g-item:hover img{transform:scale(1.05)}
+.g-item figcaption{position:absolute;left:14px;bottom:14px;background:rgba(35,35,35,.72);backdrop-filter:blur(8px);color:var(--milk-2);font-size:.78rem;letter-spacing:.06em;padding:8px 16px;border-radius:999px}
+.faq-wrap{max-width:780px;margin:0 auto}
+.faq-item{background:var(--milk-2);border:1px solid var(--line);border-radius:18px;margin-bottom:14px;overflow:hidden}
+.faq-q{width:100%;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:22px 26px;text-align:left;font-weight:700;font-size:1rem}
+.faq-q .icon{flex:0 0 30px;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gold-deep);color:var(--gold-deep);display:grid;place-items:center;font-size:1.05rem;transition:transform .35s,background .35s,color .35s}
+.faq-item.open .icon{transform:rotate(45deg);background:var(--gold-deep);color:#fff}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .45s ease}
+.faq-a p{padding:0 26px 24px;color:var(--graphite-soft)}
+.contact-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:start}
+.contact-info p{color:var(--graphite-soft);margin:18px 0 28px}
+.contact-lines{display:grid;gap:14px}
+.contact-lines li{display:flex;gap:12px;align-items:center;font-weight:700}
+.contact-lines i{font-style:normal;color:var(--gold-deep)}
+.contact-lines small{display:block;font-weight:500;color:var(--graphite-soft)}
+.form-card{background:var(--milk-2);border:1px solid var(--line);border-radius:26px;padding:40px;box-shadow:var(--shadow)}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.06em;margin-bottom:8px;color:var(--graphite-soft)}
+.field input,.field select,.field textarea{width:100%;padding:15px 18px;border-radius:14px;border:1px solid var(--line);background:var(--milk);font:inherit;color:var(--graphite);outline:none;transition:border-color .3s,box-shadow .3s}
+.field textarea{min-height:110px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold-deep);box-shadow:0 0 0 4px rgba(201,164,92,.18)}
+.form-note{font-size:.78rem;color:var(--graphite-soft);margin-top:14px}
+.form-card .btn{width:100%}
+.form-success{text-align:center;padding:30px 10px}
+.form-success span{font-size:2.4rem;color:var(--gold-deep)}
+.form-success h3{font-size:1.25rem;margin:16px 0 10px}
+.form-success p{color:var(--graphite-soft)}
+footer{background:var(--graphite);color:rgba(255,253,248,.66);padding:44px 0}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.footer-logo{color:var(--milk-2)}
+.footer-logo span{color:var(--gold)}
+.footer-note{font-size:.85rem}
+.footer-copy{font-size:.82rem}
+@media(max-width:1024px){
+  .cards-3{grid-template-columns:repeat(2,1fr)}
+  .hero-grid,.about-grid,.mentor-grid,.contact-grid{grid-template-columns:1fr;gap:48px}
+  .hero-photo{max-width:480px}
+  .mentor-photo{max-width:480px}
+  .about-photo{max-width:460px}
+}
+@media(max-width:900px){
+  .nav,.header-cta{display:none}
+  .burger{display:flex}
+  .section{padding:76px 0}
+  .hero{padding-top:130px}
+  .gallery-grid{grid-template-columns:1fr}
+  .g-item img{height:380px}
+}
+@media(max-width:640px){
+  .header-inner{height:68px}
+  html{scroll-padding-top:88px}
+  [id]{scroll-margin-top:88px}
+  .mobile-menu{padding-top:calc(68px + env(safe-area-inset-top) + 12px);padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .hero{padding:calc(68px + env(safe-area-inset-top) + 26px) 0 44px}
+  .hero-grid{gap:30px}
+  .hero h1{font-size:clamp(1.7rem,8vw,2.25rem)}
+  .hero-actions{flex-direction:column;align-items:stretch;gap:12px;margin:26px 0 30px}
+  .hero-actions .btn{width:100%;max-width:100%}
+  .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:var(--milk-2);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center}
+  .stat b{font-size:1.05rem}
+  .stat span{font-size:.7rem}
+  .hero-photo{max-width:100%}
+  .hero-photo::before{transform:translate(8px,8px)}
+  .hero-badge{left:12px;bottom:12px;padding:10px 14px;gap:10px;max-width:calc(100% - 24px)}
+  .hero-badge .star{width:36px;height:36px;font-size:.95rem}
+  .hero-badge b{font-size:.82rem}
+  .hero-badge small{font-size:.68rem}
+  .marquee{transform:none;width:100%;margin-left:0;padding:12px 0}
+  .mq-group{gap:18px;padding-right:18px}
+  .mq-group span{font-size:.72rem}
+  .section{padding:60px 0}
+  .cards-3{grid-template-columns:1fr;gap:16px}
+  .dir-card,.course-card,.free-card{padding:22px}
+  .about-photo,.mentor-photo{max-width:100%}
+  .about-photo::after{right:6px}
+  .mentor-photo::before{transform:translate(8px,8px)}
+  .g-item img{height:auto;aspect-ratio:4/5}
+  .faq-q{padding:16px 18px;font-size:.95rem;gap:12px}
+  .faq-a p{padding:0 18px 18px}
+  .form-card{padding:22px}
+  .field input,.field select,.field textarea{font-size:16px}
+  .footer-inner{flex-direction:column;align-items:flex-start;gap:12px}
+  footer{padding:36px 0 calc(36px + env(safe-area-inset-bottom))}
+}
+@media(max-width:380px){
+  .container{width:94%}
+  .hero-stats{grid-template-columns:1fr}
+  .stat{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 14px}
+  .stat b{font-size:1rem}
+  .mobile-menu a{font-size:1rem}
+  .hero-badge small{font-size:.64rem}
+}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .marquee-track{animation:none}
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<header id="header">
+  <div class="container header-inner">
+    <a class="logo" href="#top">NASTYA<span>·</span>HR</a>
+    <nav class="nav">
+      <a href="#about">Обо мне</a>
+      <a href="#directions">Направления</a>
+      <a href="#courses">Курсы</a>
+      <a href="#materials">Материалы</a>
+      <a href="#mentoring">Наставничество</a>
+      <a href="#gallery">Галерея</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn header-cta" href="#contact" data-program="consult">Оставить заявку</a>
+    <button class="burger" id="burger" aria-label="Меню" aria-expanded="false"><i></i><i></i><i></i></button>
+  </div>
+</header>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about">Обо мне</a>
+  <a href="#directions">Направления</a>
+  <a href="#courses">Курсы</a>
+  <a href="#materials">Материалы</a>
+  <a href="#mentoring">Наставничество</a>
+  <a href="#gallery">Галерея</a>
+  <a href="#faq">FAQ</a>
+  <a class="btn" href="#contact" data-program="consult">Оставить заявку</a>
+</div>
+<main>
+  <section class="hero" id="top">
+    <div class="container hero-grid">
+      <div class="hero-copy reveal">
+        <span class="overline">HR-эксперт · Рекрутинг · HR Operations</span>
+        <h1>Практический HR и карьера, <em>которую вы строите осознанно</em></h1>
+        <p class="lead">Меня зовут Настя. Более 8 лет я работаю в HR и рекрутинге и готовлю специалистов, которым нужны реальные навыки: подбор, сорсинг, HR-процессы и современные AI-инструменты.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#directions">Выбрать направление</a>
+          <a class="btn ghost" href="#materials" data-program="free">Бесплатные материалы</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><b>8+</b><span>лет в HR и рекрутинге</span></div>
+          <div class="stat"><b>6</b><span>направлений обучения и роста</span></div>
+          <div class="stat"><b>1:1</b><span>персональное наставничество</span></div>
+        </div>
+      </div>
+      <div class="hero-photo reveal">
+        <div class="frame"><img src="https://res.cloudinary.com/nxkxj4hn/image/upload/v1785880359/IMG_4344_rn1gbr.jpg" alt="Настя — HR-эксперт"></div>
+        <div class="hero-badge"><span class="star">✦</span><span><b>8+ лет в HR</b><small>практика, рекрутинг, операции</small></span></div>
+      </div>
+    </div>
+  </section>
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <div class="mq-group">
+        <span>HR С НУЛЯ</span><i>✦</i><span>РЕКРУТИНГ</span><i>✦</i><span>СОРСИНГ</span><i>✦</i><span>HR OPERATIONS</span><i>✦</i><span>AI ДЛЯ HR</span><i>✦</i><span>НАСТАВНИЧЕСТВО</span><i>✦</i><span>КАРЬЕРА</span><i>✦</i>
+      </div>
+    </div>
+  </div>
+  <section class="section" id="about">
+    <div class="container about-grid">
+      <div class="about-photo reveal">
+        <div class="frame"><img src="https://res.cloudinary.com/nxkxj4hn/image/upload/v1785880362/IMG_4346_fmfclk.jpg" alt="Настя — портрет"></div>
+      </div>
+      <div class="about-text reveal">
+        <span class="overline">Обо мне</span>
+        <h2>Настя — HR-практик, который говорит на языке бизнеса и людей</h2>
+        <p style="margin-top:18px">Больше 8 лет я живу профессией HR: рекрутинг и сорсинг, HR-операции, работа с командами и процессами. Я знаю, как выглядит профессия изнутри — от первого интервью до выстроенных операций.</p>
+        <p>Сейчас я собираю обучающие программы и онлайн-школу NASTYA·HR: без воды и «успешного успеха», только рабочие инструменты, кейсы и практика, которые можно применить сразу.</p>
+        <ul class="facts">
+          <li>8+ лет практики в HR и рекрутинге</li>
+          <li>Реальные процессы: подбор, адаптация, операции</li>
+          <li>Современные инструменты и AI в работе HR</li>
+          <li>Внимательное отношение к людям и их карьерным трекам</li>
+        </ul>
+        <p class="signature">С заботой о вашем пути в HR, Настя ✦</p>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="directions">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="overline">Направления</span>
+        <h2>Чем я могу быть полезна</h2>
+        <p>Шесть направлений — от входа в профессию до уверенной практики и современных инструментов.</p>
+      </div>
+      <div class="cards-3">
+        <article class="dir-card reveal"><span class="dir-num">01</span><h3>HR с нуля</h3><p>Понятный вход в профессию: база, роли, навыки и план первых шагов без хаоса.</p></article>
+        <article class="dir-card reveal"><span class="dir-num">02</span><h3>Рекрутинг и сорсинг</h3><p>Каналы поиска, воронки кандидатов, интервью и закрытие вакансий без выгорания.</p></article>
+        <article class="dir-card reveal"><span class="dir-num">03</span><h3>HR Operations</h3><p>Процессы, документы, адаптация и метрики — порядок в ежедневной работе HR.</p></article>
+        <article class="dir-card reveal"><span class="dir-num">04</span><h3>AI для HR</h3><p>Нейросети и сервисы, которые ускоряют рутину: тексты, сорсинг, аналитика.</p></article>
+        <article class="dir-card reveal"><span class="dir-num">05</span><h3>Персональное наставничество</h3><p>Индивидуальная работа 1:1 под вашу ситуацию, цели и карьерный трек.</p></article>
+        <article class="dir-card reveal"><span class="dir-num">06</span><h3>Бесплатные материалы</h3><p>Чек-листы, шаблоны и гайды, чтобы начать знакомство с профессией уже сегодня.</p></article>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="courses">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="overline">Курсы</span>
+        <h2>Программы обучения</h2>
+        <p>Программы находятся в финальной сборке. Стоимость и даты старта будут объявлены перед запуском.</p>
+      </div>
+      <div class="cards-3">
+        <article class="course-card reveal">
+          <span class="course-tag">Старт</span>
+          <h3>HR с нуля</h3>
+          <p class="course-meta">для тех, кто входит в профессию</p>
+          <p class="price-line">Стоимость уточняется</p>
+          <ul class="course-list">
+            <li>База профессии и карта ролей</li>
+            <li>Резюме и самопрезентация</li>
+            <li>Первые практические кейсы</li>
+            <li>План входа в профессию</li>
+          </ul>
+          <a class="btn ghost" href="#contact" data-program="start">Оставить заявку</a>
+        </article>
+        <article class="course-card hit reveal">
+          <span class="badge-hit">Набор скоро</span>
+          <span class="course-tag">Практика</span>
+          <h3>Рекрутинг и сорсинг</h3>
+          <p class="course-meta">для действующих и будущих рекрутеров</p>
+          <p class="price-line">Стоимость уточняется</p>
+          <ul class="course-list">
+            <li>Каналы сорсинга и поиск кандидатов</li>
+            <li>Структурные интервью</li>
+            <li>Воронки и работа с откликами</li>
+            <li>Разборы реальных ситуаций</li>
+          </ul>
+          <a class="btn" href="#contact" data-program="recruiting">Оставить заявку</a>
+        </article>
+        <article class="course-card reveal">
+          <span class="course-tag">Рост</span>
+          <h3>HR Operations и AI для HR</h3>
+          <p class="course-meta">для специалистов, которые хотят систему</p>
+          <p class="price-line">Стоимость уточняется</p>
+          <ul class="course-list">
+            <li>HR-процессы и операции</li>
+            <li>Адаптация и документы</li>
+            <li>AI-инструменты для рутины</li>
+            <li>Автоматизация без хаоса</li>
+          </ul>
+          <a class="btn ghost" href="#contact" data-program="ops">Оставить заявку</a>
+        </article>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="materials">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="overline">Бесплатные материалы</span>
+        <h2>Начните знакомство с профессией</h2>
+        <p>Материалы будут доступны перед запуском школы. Оставьте заявку — и получите их первыми.</p>
+      </div>
+      <div class="cards-3">
+        <article class="free-card reveal">
+          <span class="free-icon">✦</span>
+          <h3>Чек-лист «HR: точка старта»</h3>
+          <p>Пошаговый ориентир для входа в профессию: что изучить и с чего начать.</p>
+          <a class="btn ghost" href="#contact" data-program="free">Получить — скоро</a>
+        </article>
+        <article class="free-card reveal">
+          <span class="free-icon">❋</span>
+          <h3>Шаблоны резюме и письма</h3>
+          <p>Аккуратные формы резюме и сопроводительного письма для HR-специалиста.</p>
+          <a class="btn ghost" href="#contact" data-program="free">Получить — скоро</a>
+        </article>
+        <article class="free-card reveal">
+          <span class="free-icon">✧</span>
+          <h3>Гайд «AI для HR: быстрый старт»</h3>
+          <p>Подборка сценариев применения нейросетей в ежедневных задачах HR.</p>
+          <a class="btn ghost" href="#contact" data-program="free">Получить — скоро</a>
+        </article>
+      </div>
+    </div>
+  </section>
+  <section class="section mentorship" id="mentoring">
+    <div class="container mentor-grid">
+      <div class="mentor-copy reveal">
+        <span class="overline">Наставничество</span>
+        <h2>Персональное сопровождение 1:1</h2>
+        <p style="margin-top:18px">Формат для тех, кому важна индивидуальная траектория: спокойный разбор вашей ситуации, честная обратная связь и поддержка на каждом шаге.</p>
+        <ul class="mentor-list">
+          <li>Персональный план и карьерная стратегия</li>
+          <li>Регулярные встречи в формате один на один</li>
+          <li>Разборы ваших кейсов, резюме и интервью</li>
+          <li>Поддержка между встречами</li>
+        </ul>
+        <p class="mentor-price">Стоимость уточняется</p>
+        <a class="btn" href="#contact" data-program="mentorship">Записаться на наставничество</a>
+      </div>
+      <div class="mentor-photo reveal">
+        <div class="frame"><img src="https://res.cloudinary.com/nxkxj4hn/image/upload/v1785880363/IMG_4347_qxvveb.jpg" alt="Настя — наставничество"></div>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="gallery">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="overline">Галерея</span>
+        <h2>Живые кадры</h2>
+      </div>
+      <div class="gallery-grid">
+        <figure class="g-item sea reveal"><img src="https://res.cloudinary.com/nxkxj4hn/image/upload/v1785880364/IMG_4348_geuptb.jpg" alt="Настя у моря"><figcaption>У моря</figcaption></figure>
+        <figure class="g-item car reveal"><img src="https://res.cloudinary.com/nxkxj4hn/image/upload/v1785880361/IMG_4345_kytumy.jpg" alt="Настя у автомобиля"><figcaption>У автомобиля</figcaption></figure>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head reveal" style="margin-left:auto;margin-right:auto;text-align:center">
+        <span class="overline" style="justify-content:center">FAQ</span>
+        <h2>Частые вопросы</h2>
+      </div>
+      <div class="faq-wrap reveal">
+        <div class="faq-item">
+          <button class="faq-q">Я новичок без опыта. Мне подойдёт обучение?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Да, направление «HR с нуля» создано именно для входа в профессию: понятная база, план первых шагов и практика без перегруза.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Какой формат обучения?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Программы строятся вокруг практики: уроки, кейсы, разборы и поддержка. Наставничество проходит индивидуально, в формате 1:1.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Сколько стоит обучение?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Стоимость уточняется и будет объявлена перед запуском. Оставьте заявку — и вы узнаете условия одними из первых.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Когда стартуют потоки?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Даты старта будут объявлены перед публикацией школы. Подпишитесь через форму заявки, чтобы не пропустить анонс.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Чем наставничество отличается от курсов?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Курс — это программа и группа. Наставничество — индивидуальная работа под вашу ситуацию: стратегия, разборы и сопровождение.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Будут ли бесплатные материалы?<span class="icon">+</span></button>
+          <div class="faq-a"><p>Да, чек-листы, шаблоны и гайды будут доступны перед запуском. Они помогут познакомиться с профессией до старта обучения.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="contact">
+    <div class="container contact-grid">
+      <div class="contact-info reveal">
+        <span class="overline">Заявка</span>
+        <h2>Обсудим ваш путь в HR</h2>
+        <p>Оставьте заявку — я свяжусь с вами, когда откроется запись на направления и будут объявлены условия. А пока пришлю бесплатные материалы.</p>
+        <ul class="contact-lines">
+          <li><i>✦</i><span>Telegram<small>контакт будет добавлен перед публикацией</small></span></li>
+          <li><i>✦</i><span>Email<small>контакт будет добавлен перед публикацией</small></span></li>
+          <li><i>✦</i><span>Формат работы<small>онлайн, из любой точки мира</small></span></li>
+        </ul>
+      </div>
+      <div class="form-card reveal" id="formWrap">
+        <form id="leadForm">
+          <div class="field"><label for="name">Ваше имя</label><input id="name" name="name" type="text" placeholder="Как к вам обращаться?" required></div>
+          <div class="field"><label for="contact">Телефон или Telegram</label><input id="contact" name="contact" type="text" placeholder="@username или номер телефона" required></div>
+          <div class="field"><label for="interest">Что вас интересует</label><select id="interest" name="interest"><option value="start">Курс «HR с нуля»</option><option value="recruiting">Рекрутинг и сорсинг</option><option value="ops">HR Operations и AI для HR</option><option value="mentorship">Наставничество</option><option value="free">Бесплатные материалы</option><option value="consult">Консультация</option></select></div>
+          <div class="field"><label for="message">Пара слов о себе</label><textarea id="message" name="message" placeholder="Расскажите о своей цели — так я подготовлюсь к разговору"></textarea></div>
+          <button class="btn" type="submit">Отправить заявку ✦</button>
+          <p class="form-note">Форма работает в демонстрационном режиме.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="container footer-inner">
+    <a class="logo footer-logo" href="#top">NASTYA<span>·</span>HR</a>
+    <p class="footer-note">Контакты будут добавлены перед публикацией.</p>
+    <p class="footer-copy">© <span id="year">2025</span> NASTYA·HR — практический HR и карьера</p>
+  </div>
+</footer>
+<script>
+(function(){
+  var body=document.body;
+  var burger=document.getElementById('burger');
+  var menu=document.getElementById('mobileMenu');
+  function closeMenu(){
+    body.classList.remove('menu-open');
+    body.style.overflow='';
+    burger.setAttribute('aria-expanded','false');
+  }
+  function openMenu(){
+    body.classList.add('menu-open');
+    burger.setAttribute('aria-expanded','true');
+  }
+  burger.addEventListener('click',function(){
+    if(body.classList.contains('menu-open')){closeMenu();}else{openMenu();}
+  });
+  document.querySelectorAll('a[href^="#"]').forEach(function(link){
+    link.addEventListener('click',function(event){
+      var hash=link.getAttribute('href');
+      if(hash.length>1){
+        var target=document.querySelector(hash);
+        if(target){
+          event.preventDefault();
+          closeMenu();
+          window.setTimeout(function(){
+            target.scrollIntoView({behavior:'smooth',block:'start'});
+          },60);
+        }
+      }
+    });
+  });
+  var header=document.getElementById('header');
+  var onScroll=function(){header.classList.toggle('scrolled',window.scrollY>10);};
+  onScroll();
+  window.addEventListener('scroll',onScroll,{passive:true});
+  var track=document.querySelector('.marquee-track');
+  if(track){track.innerHTML+=track.innerHTML;track.innerHTML+=track.innerHTML;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){entry.target.classList.add('visible');io.unobserve(entry.target);}
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  document.querySelectorAll('.faq-item').forEach(function(item){
+    var btn=item.querySelector('.faq-q');
+    var panel=item.querySelector('.faq-a');
+    btn.addEventListener('click',function(){
+      var isOpen=item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function(other){
+        other.classList.remove('open');
+        other.querySelector('.faq-a').style.maxHeight=null;
+      });
+      if(!isOpen){item.classList.add('open');panel.style.maxHeight=panel.scrollHeight+'px';}
+    });
+  });
+  var select=document.getElementById('interest');
+  document.querySelectorAll('[data-program]').forEach(function(el){
+    el.addEventListener('click',function(){
+      if(select&&el.dataset.program){select.value=el.dataset.program;}
+    });
+  });
+  var form=document.getElementById('leadForm');
+  var wrap=document.getElementById('formWrap');
+  form.addEventListener('submit',function(event){
+    event.preventDefault();
+    wrap.innerHTML='<div class="form-success"><span>✦</span><h3>Заявка сохранена</h3><p>Заявка сохранена только в демонстрационном режиме.<br>Реальная отправка будет подключена перед публикацией.</p></div>';
+  });
+  document.getElementById('year').textContent=new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
