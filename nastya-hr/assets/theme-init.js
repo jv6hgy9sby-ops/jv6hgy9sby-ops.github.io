@@ -3,8 +3,8 @@
 
   var root=document.documentElement;
   var storageKey="anasteysha-theme";
-  var lightColor="#F6F1E8";
-  var darkColor="#181715";
+  var lightColor="#FAF7F2";
+  var darkColor="#1F2328";
   var saved=null;
 
   try{
@@ -22,4 +22,24 @@
 
   var meta=document.querySelector('meta[name="theme-color"]');
   if(meta){meta.setAttribute("content",theme==="dark"?darkColor:lightColor);}
+
+  function ensureLink(rel,href,attributes){
+    var selector='link[rel="'+rel+'"]';
+    if(attributes&&attributes.sizes){selector+='[sizes="'+attributes.sizes+'"]';}
+    var link=document.querySelector(selector);
+    if(!link){
+      link=document.createElement("link");
+      link.rel=rel;
+      document.head.appendChild(link);
+    }
+    link.href=href;
+    if(attributes){
+      Object.keys(attributes).forEach(function(name){link.setAttribute(name,attributes[name]);});
+    }
+  }
+
+  document.querySelectorAll('link[rel="icon"]').forEach(function(link){link.remove();});
+  ensureLink("icon","assets/brand/favicon.svg",{type:"image/svg+xml"});
+  ensureLink("icon","assets/brand/favicon-32.png",{type:"image/png",sizes:"32x32"});
+  ensureLink("apple-touch-icon","assets/brand/apple-touch-icon.png",{sizes:"180x180"});
 })();
