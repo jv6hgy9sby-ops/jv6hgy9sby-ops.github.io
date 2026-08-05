@@ -1,43 +1,62 @@
 (function(){
   "use strict";
 
+  var root=document.documentElement;
   var body=document.body;
   var page=body.dataset.page||"";
   var headerHost=document.querySelector("[data-site-header]");
   var footerHost=document.querySelector("[data-site-footer]");
+  var themeStorageKey="anasteysha-theme";
+  var themeColors={light:"#F6F1E8",dark:"#181715"};
   var nav=[
-    ["home","index.html","Главная"],
-    ["about","about.html","О Насте"],
-    ["education","education.html","Обучение"],
-    ["mentoring","mentoring.html","Наставничество"],
-    ["business","business.html","Для бизнеса"],
-    ["solutions","solutions.html","Примеры решений"],
-    ["materials","materials.html","Материалы"],
-    ["blog","blog.html","Блог"],
-    ["contact","contact.html","Контакты"]
+    {href:"education.html",label:"Специалистам",pages:["education"]},
+    {href:"mentoring.html",label:"Наставничество",pages:["mentoring"]},
+    {href:"business.html",label:"Компаниям",pages:["business"]},
+    {href:"solutions.html",label:"Решения",pages:["solutions"]},
+    {href:"about.html",label:"О Насте",pages:["about"]},
+    {href:"materials.html",label:"База знаний",pages:["materials","blog"]},
+    {href:"contact.html",label:"Контакты",pages:["contact","privacy"]}
   ];
+
+  function isActive(item){
+    return item.pages.indexOf(page)!==-1;
+  }
 
   function navLinks(){
     return nav.map(function(item){
-      return '<a href="'+item[1]+'" data-page-link="'+item[0]+'">'+item[2]+'</a>';
+      var current=isActive(item)?' class="active" aria-current="page"':"";
+      return '<a href="'+item.href+'"'+current+'>'+item.label+'</a>';
     }).join("");
+  }
+
+  function themeButton(extraClass){
+    return '<button class="theme-switch '+(extraClass||"")+'" type="button" data-theme-toggle aria-label="Переключить на тёмную тему" aria-pressed="false">'+
+      '<span class="theme-switch-track" aria-hidden="true">'+
+        '<span class="theme-switch-icon sun">☀</span>'+
+        '<span class="theme-switch-icon moon">☾</span>'+
+        '<span class="theme-switch-thumb"></span>'+
+      '</span>'+
+    '</button>';
   }
 
   if(headerHost){
     headerHost.innerHTML=
       '<header class="site-header" id="siteHeader">'+
         '<div class="container header-inner">'+
-          '<div class="brand-lockup">'+
-            '<a class="logo" href="index.html" aria-label="Anasteysha — главная">Anasteysha</a>'+
-          '</div>'+
+          '<a class="logo" href="index.html" aria-label="Anasteysha — главная">Anasteysha</a>'+
           '<nav class="desktop-nav" aria-label="Основная навигация">'+navLinks()+'</nav>'+
           '<div class="header-actions">'+
-            '<a class="btn small-btn" href="contact.html">Связаться</a>'+
+            themeButton("header-theme-switch")+
+            '<a class="btn small-btn" href="contact.html">Обсудить задачу</a>'+
             '<button class="burger" id="burger" type="button" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false"><i></i><i></i><i></i></button>'+
           '</div>'+
         '</div>'+
       '</header>'+
-      '<nav class="mobile-menu" id="mobileMenu" aria-label="Мобильная навигация" aria-hidden="true">'+navLinks()+'<a class="btn" href="contact.html">Связаться</a></nav>';
+      '<nav class="mobile-menu" id="mobileMenu" aria-label="Мобильная навигация" aria-hidden="true">'+
+        '<a href="index.html"'+(page==="home"?' class="active" aria-current="page"':"")+'>Главная</a>'+navLinks()+
+        '<div class="mobile-theme-row"><span>Тема сайта</span>'+themeButton("mobile-theme-switch")+'</div>'+
+        '<a class="btn" href="contact.html">Обсудить задачу</a>'+
+      '</nav>';
   }
 
   if(footerHost){
@@ -45,14 +64,59 @@
       '<footer class="site-footer">'+
         '<div class="container">'+
           '<div class="footer-grid">'+
-            '<div class="footer-brand"><a class="logo" href="index.html">Anasteysha</a><p>Практический HR для людей, команд и бизнеса: обучение, наставничество, рекрутинг, HR Operations и AI-решения.</p></div>'+
-            '<div class="footer-col"><h3>Разделы</h3><div class="footer-links"><a href="about.html">О Насте</a><a href="education.html">Обучение</a><a href="mentoring.html">Наставничество</a><a href="business.html">Для бизнеса</a><a href="solutions.html">Примеры решений</a></div></div>'+
-            '<div class="footer-col"><h3>Полезное</h3><div class="footer-links"><a href="materials.html">Материалы</a><a href="blog.html">Блог</a><a href="contact.html">Контакты</a><a href="privacy.html">Конфиденциальность</a></div></div>'+
-            '<div class="footer-col"><h3>Связь</h3><div class="footer-links"><span>Telegram — будет добавлен</span><span>Email — будет добавлен</span><span>Формат — онлайн</span></div></div>'+
+            '<div class="footer-brand"><a class="logo" href="index.html">Anasteysha</a><p>Практический HR для специалистов, руководителей и команд: обучение, наставничество, рекрутинг, HR Operations и AI-инструменты для HR.</p></div>'+
+            '<div class="footer-col"><h3>Направления</h3><div class="footer-links"><a href="education.html">Специалистам</a><a href="mentoring.html">Наставничество</a><a href="business.html">Компаниям</a><a href="solutions.html">Решения</a></div></div>'+
+            '<div class="footer-col"><h3>База знаний</h3><div class="footer-links"><a href="materials.html">Шаблоны и материалы</a><a href="blog.html">Статьи</a><a href="about.html">О Насте</a><a href="contact.html">Контакты</a></div></div>'+
+            '<div class="footer-col"><h3>Связь</h3><div class="footer-links"><span>Telegram — будет добавлен</span><span>Email — будет добавлен</span><span>Формат — онлайн</span><a href="privacy.html">Конфиденциальность</a></div></div>'+
           '</div>'+
           '<div class="footer-bottom"><span>© <span data-year></span> Anasteysha. Персональный HR-проект.</span><a href="#top">Наверх ↑</a></div>'+
         '</div>'+
       '</footer>';
+  }
+
+  function getSavedTheme(){
+    try{
+      var saved=localStorage.getItem(themeStorageKey);
+      return saved==="light"||saved==="dark"?saved:null;
+    }catch(error){
+      return null;
+    }
+  }
+
+  function syncThemeControls(theme){
+    document.querySelectorAll("[data-theme-toggle]").forEach(function(button){
+      var dark=theme==="dark";
+      button.setAttribute("aria-pressed",String(dark));
+      button.setAttribute("aria-label",dark?"Переключить на светлую тему":"Переключить на тёмную тему");
+      button.title=dark?"Светлая тема":"Тёмная тема";
+    });
+  }
+
+  function applyTheme(theme,persist){
+    root.dataset.theme=theme;
+    root.dataset.themeSource=persist?"user":"system";
+    root.style.colorScheme=theme;
+    var meta=document.querySelector('meta[name="theme-color"]');
+    if(meta){meta.setAttribute("content",themeColors[theme]);}
+    if(persist){
+      try{localStorage.setItem(themeStorageKey,theme);}catch(error){}
+    }
+    syncThemeControls(theme);
+  }
+
+  var mediaTheme=window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null;
+  syncThemeControls(root.dataset.theme||"light");
+  document.querySelectorAll("[data-theme-toggle]").forEach(function(button){
+    button.addEventListener("click",function(){
+      applyTheme(root.dataset.theme==="dark"?"light":"dark",true);
+    });
+  });
+  if(mediaTheme){
+    var systemThemeChanged=function(event){
+      if(!getSavedTheme()){applyTheme(event.matches?"dark":"light",false);}
+    };
+    if(typeof mediaTheme.addEventListener==="function")mediaTheme.addEventListener("change",systemThemeChanged);
+    else if(typeof mediaTheme.addListener==="function")mediaTheme.addListener(systemThemeChanged);
   }
 
   var header=document.getElementById("siteHeader");
@@ -114,6 +178,15 @@
     });
   }
 
+  if(menu){
+    menu.addEventListener("click",function(event){
+      if(event.target===menu){closeMenu(true);}
+    });
+    menu.querySelectorAll("a").forEach(function(link){
+      link.addEventListener("click",function(){closeMenu(false);});
+    });
+  }
+
   document.addEventListener("keydown",function(event){
     if(event.key==="Escape"&&body.classList.contains("menu-open")){
       closeMenu(true);
@@ -129,24 +202,11 @@
     }
   });
 
-  if(menu){
-    menu.querySelectorAll("a").forEach(function(link){
-      link.addEventListener("click",function(){closeMenu(false);});
-    });
-  }
-
   function updateHeader(){
     if(header){header.classList.toggle("scrolled",window.scrollY>8);}
   }
   updateHeader();
   window.addEventListener("scroll",updateHeader,{passive:true});
-
-  if(page){
-    document.querySelectorAll('[data-page-link="'+page+'"]').forEach(function(link){
-      link.classList.add("active");
-      link.setAttribute("aria-current","page");
-    });
-  }
 
   var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var reveals=document.querySelectorAll(".reveal");
@@ -198,8 +258,7 @@
     panel.style.maxHeight=open?panel.scrollHeight+"px":"0px";
   }
 
-  var accordions=document.querySelectorAll(".article,.solution-item");
-  accordions.forEach(function(item){
+  document.querySelectorAll(".article,.solution-item").forEach(function(item){
     var summary=item.querySelector(".article-summary,.solution-summary");
     var panel=item.querySelector(".article-body,.solution-body");
     if(panel){panel.setAttribute("aria-hidden","true");}
@@ -269,23 +328,99 @@
   if(demoOutput){renderDemo("vacancy");}
 
   var form=document.getElementById("leadForm");
-  var status=document.getElementById("formStatus");
-  if(form&&status){
+  var audienceButtons=document.querySelectorAll("[data-audience-choice]");
+  var audiencePanels=document.querySelectorAll("[data-audience-panel]");
+  var audienceInput=document.getElementById("lead-audience");
+  var formMessage=document.getElementById("formMessage");
+  var draftSummary=document.getElementById("draftSummary");
+  var copyDraft=document.getElementById("copyDraft");
+  var draftText="";
+
+  function setAudience(value){
+    if(value!=="specialist"&&value!=="company")return;
+    if(audienceInput)audienceInput.value=value;
+    audienceButtons.forEach(function(button){
+      var active=button.dataset.audienceChoice===value;
+      button.classList.toggle("active",active);
+      button.setAttribute("aria-pressed",String(active));
+    });
+    audiencePanels.forEach(function(panel){
+      var active=panel.dataset.audiencePanel===value;
+      panel.hidden=!active;
+      panel.querySelectorAll("input,select,textarea").forEach(function(control){control.disabled=!active;});
+    });
+    if(formMessage){formMessage.textContent="";formMessage.classList.remove("error");}
+    if(draftSummary){draftSummary.hidden=true;}
+  }
+
+  audienceButtons.forEach(function(button){
+    button.addEventListener("click",function(){setAudience(button.dataset.audienceChoice);});
+  });
+
+  function selectedLabel(id){
+    var select=document.getElementById(id);
+    return select&&select.selectedOptions.length?select.selectedOptions[0].textContent:"";
+  }
+
+  if(form){
     var params=new URLSearchParams(window.location.search);
-    var interest=params.get("interest");
-    var select=document.getElementById("lead-interest");
-    if(interest&&select&&Array.from(select.options).some(function(option){return option.value===interest;})){
-      select.value=interest;
+    var interest=params.get("interest")||"";
+    var companyInterests=["business","ai-assistant","vacancy-assistant","onboarding","hr-operations","communications","analytics"];
+    var initialAudience=companyInterests.indexOf(interest)!==-1?"company":"specialist";
+    setAudience(initialAudience);
+
+    var targetSelect=document.getElementById(initialAudience==="company"?"company-interest":"specialist-interest");
+    if(interest&&targetSelect&&Array.from(targetSelect.options).some(function(option){return option.value===interest;})){
+      targetSelect.value=interest;
     }
+
+    form.addEventListener("input",function(){
+      if(formMessage){formMessage.textContent="";formMessage.classList.remove("error");}
+      if(draftSummary){draftSummary.hidden=true;}
+    });
+
     form.addEventListener("submit",function(event){
       event.preventDefault();
       if(!form.checkValidity()){
+        if(formMessage){formMessage.textContent="Проверьте обязательные поля. Данные не отправлены.";formMessage.classList.add("error");}
         form.reportValidity();
         return;
       }
-      form.hidden=true;
-      status.hidden=false;
-      status.focus();
+
+      var audience=audienceInput&&audienceInput.value==="company"?"Компания или руководитель":"HR-специалист";
+      var direction=audienceInput&&audienceInput.value==="company"?selectedLabel("company-interest"):selectedLabel("specialist-interest");
+      var goal=document.getElementById(audienceInput&&audienceInput.value==="company"?"company-goal":"specialist-goal");
+      var context=document.getElementById(audienceInput&&audienceInput.value==="company"?"company-context":"specialist-context");
+      var name=document.getElementById("lead-name");
+
+      draftText="Черновик обращения Anasteysha\n"+
+        "Имя: "+(name?name.value.trim():"")+"\n"+
+        "Аудитория: "+audience+"\n"+
+        "Направление: "+direction+"\n"+
+        "Контекст: "+(context?context.value.trim():"")+"\n"+
+        "Задача: "+(goal?goal.value.trim():"");
+
+      if(draftSummary){
+        draftSummary.hidden=false;
+        var values=draftSummary.querySelectorAll("[data-draft-value]");
+        values.forEach(function(element){
+          var key=element.dataset.draftValue;
+          if(key==="audience")element.textContent=audience;
+          if(key==="direction")element.textContent=direction;
+          if(key==="goal")element.textContent=goal?goal.value.trim():"";
+        });
+        draftSummary.focus();
+      }
+      if(formMessage){formMessage.textContent="Черновик проверен. Он не отправлен и не сохранён.";formMessage.classList.remove("error");}
+    });
+  }
+
+  if(copyDraft){
+    copyDraft.addEventListener("click",function(){
+      if(!draftText)return;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(draftText).then(function(){copyDraft.textContent="Скопировано";window.setTimeout(function(){copyDraft.textContent="Скопировать черновик";},1400);});
+      }
     });
   }
 
