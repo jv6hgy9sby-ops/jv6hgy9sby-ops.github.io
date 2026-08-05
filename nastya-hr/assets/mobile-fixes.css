@@ -1,4 +1,4 @@
-/* Targeted mobile corrections: logo mark, hero composition and audience actions. */
+/* Targeted mobile corrections: final logo system, hero composition and audience actions. */
 .hero-copy h1,
 .page-hero h1{
   -webkit-hyphens:none!important;
@@ -7,26 +7,62 @@
   overflow-wrap:normal!important;
 }
 
+.site-logo__full{
+  aspect-ratio:4/1!important;
+}
+
+.site-logo__full .site-logo__image,
+.site-logo__mark .site-logo__image{
+  object-fit:contain!important;
+}
+
 .hero-title__line{display:inline}
 .hero-solutions-mobile{display:none}
 
 @media (max-width:640px){
-  .header-logo .site-logo__mark{
-    width:48px!important;
-    height:48px!important;
-    display:block!important;
-    background-image:url("brand/logo-anasteysha-mark-dark.svg?v=20260805-5");
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size:contain;
+  .header-logo{
+    width:56px!important;
+    height:56px!important;
+    min-width:56px!important;
+    min-height:56px!important;
+    max-height:56px!important;
   }
 
-  html[data-theme="dark"] .header-logo .site-logo__mark{
-    background-image:url("brand/logo-anasteysha-mark-light.svg?v=20260805-5");
+  .header-logo .site-logo__full{
+    display:none!important;
+  }
+
+  .header-logo .site-logo__mark{
+    position:relative;
+    display:block!important;
+    width:56px!important;
+    height:56px!important;
+    aspect-ratio:1!important;
+    background:none!important;
   }
 
   .header-logo .site-logo__mark .site-logo__image{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    object-position:center!important;
+  }
+
+  html[data-theme="light"] .header-logo .site-logo__mark .site-logo__image--light-theme{
+    display:block!important;
+  }
+
+  html[data-theme="light"] .header-logo .site-logo__mark .site-logo__image--dark-theme{
     display:none!important;
+  }
+
+  html[data-theme="dark"] .header-logo .site-logo__mark .site-logo__image--light-theme{
+    display:none!important;
+  }
+
+  html[data-theme="dark"] .header-logo .site-logo__mark .site-logo__image--dark-theme{
+    display:block!important;
   }
 }
 
