@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  var assetVersion="20260805-3";
+  var assetVersion="20260805-4";
   var paths={
     dark:"assets/brand/logo-anasteysha-mark-dark.svg?v="+assetVersion,
     light:"assets/brand/logo-anasteysha-mark-light.svg?v="+assetVersion,
@@ -33,41 +33,9 @@
     });
   }
 
-  function prepareHomeHero(){
-    if(document.body.dataset.page!=="home")return;
-
-    var title=document.querySelector(".hero-copy h1");
-    if(title){
-      title.classList.add("hero-title");
-      title.textContent="";
-
-      [
-        "Развитие HR-специалистов",
-        "и системные решения",
-        "для компаний"
-      ].forEach(function(text,index,array){
-        var line=document.createElement("span");
-        line.className="hero-title__line";
-        line.textContent=text;
-        title.appendChild(line);
-        if(index<array.length-1){title.appendChild(document.createTextNode(" "));}
-      });
-    }
-
-    var audience=document.querySelector(".hero-audience-links");
-    if(audience){
-      audience.setAttribute("aria-label","Выберите подходящий маршрут");
-    }
-  }
-
-  function init(){
-    prepareMobileMarks();
-    prepareHomeHero();
-  }
-
   if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",init,{once:true});
+    document.addEventListener("DOMContentLoaded",prepareMobileMarks,{once:true});
   }else{
-    init();
+    prepareMobileMarks();
   }
 })();
