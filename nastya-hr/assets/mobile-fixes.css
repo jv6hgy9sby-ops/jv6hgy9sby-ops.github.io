@@ -80,6 +80,14 @@
   .hero-actions .btn:first-child{
     width:100%!important;
     min-height:52px!important;
+    background:var(--color-accent)!important;
+    border-color:var(--color-accent)!important;
+    color:var(--color-primary-contrast)!important;
+  }
+
+  .hero-actions .btn:first-child:hover,
+  .hero-actions .btn:first-child:active{
+    filter:brightness(.95);
   }
 
   .hero-actions .hero-solutions-desktop{
