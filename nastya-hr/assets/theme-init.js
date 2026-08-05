@@ -6,7 +6,7 @@
   var lightColor="#FAF7F2";
   var darkColor="#1F2328";
   var saved=null;
-  var assetVersion="20260805-1";
+  var assetVersion="20260805-2";
 
   try{
     saved=localStorage.getItem(storageKey);
