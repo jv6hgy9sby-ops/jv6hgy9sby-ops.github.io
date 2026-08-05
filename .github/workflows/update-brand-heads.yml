@@ -1,0 +1,36 @@
+name: Update Anasteysha brand metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "nastya-hr/scripts/update_brand_heads.py"
+      - ".github/workflows/update-brand-heads.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-heads:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Normalize HTML metadata
+        run: python nastya-hr/scripts/update_brand_heads.py
+
+      - name: Commit generated HTML changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add nastya-hr/*.html
+          if git diff --cached --quiet; then
+            echo "No HTML changes required"
+          else
+            git commit -m "Normalize Anasteysha icons and social metadata"
+            git push
+          fi
