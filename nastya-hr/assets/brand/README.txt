@@ -1,0 +1,1 @@
+PNG brand assets are derived from the approved brand board. Final vector files require the original SVG, PDF, EPS or AI source.
