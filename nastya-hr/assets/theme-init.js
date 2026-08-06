@@ -6,7 +6,7 @@
   var lightColor="#FAF7F2";
   var darkColor="#1F2328";
   var saved=null;
-  var assetVersion="20260805-logo-final";
+  var assetVersion="20260806-prototype-polish-1";
 
   try{
     saved=localStorage.getItem(storageKey);
@@ -49,6 +49,7 @@
   function appendScript(src){
     var script=document.createElement("script");
     script.src=src;
+    script.async=false;
     script.defer=true;
     document.head.appendChild(script);
   }
@@ -56,7 +57,7 @@
   document.querySelectorAll('link[rel="icon"]').forEach(function(link){link.remove();});
   ensureLink("icon","assets/brand/favicon-32.png?v="+assetVersion,{type:"image/png",sizes:"32x32"});
   ensureLink("apple-touch-icon","assets/brand/apple-touch-icon.png?v="+assetVersion,{sizes:"180x180"});
-  ensureLink("manifest","site.webmanifest?v="+assetVersion);
+  ensureLink("manifest","manifest.webmanifest?v="+assetVersion);
 
   appendStylesheet("assets/mobile-fixes.css?v="+assetVersion);
   appendScript("assets/navigation-extension.js?v="+assetVersion);
