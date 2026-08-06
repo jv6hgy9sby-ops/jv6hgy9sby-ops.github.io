@@ -11,18 +11,84 @@ permissions:
 jobs:
   import:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download latest Qwen deployment
+      - name: Install Playwright
         run: |
-          curl --location --fail --retry 3 \
-            --user-agent 'Mozilla/5.0' \
-            'https://chat.qwen.ai/s/deploy/t_29abfe47-f098-44c9-a6c7-251b67a95766' \
-            --output index.html
-          test -s index.html
-          grep -q '<!DOCTYPE html\|<!doctype html' index.html
+          npm init -y
+          npm install playwright@1.54.1
+          npx playwright install --with-deps chromium
+
+      - name: Extract deployed game from Qwen
+        env:
+          QWEN_URL: https://chat.qwen.ai/s/deploy/t_29abfe47-f098-44c9-a6c7-251b67a95766
+        run: |
+          cat > extract-qwen.cjs <<'EOF'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              locale: 'ru-RU',
+              viewport: { width: 1440, height: 900 },
+              userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+            });
+            const page = await context.newPage();
+            page.on('console', msg => console.log('[browser]', msg.type(), msg.text()));
+            page.on('pageerror', error => console.log('[pageerror]', error.message));
+
+            await page.goto(process.env.QWEN_URL, { waitUntil: 'domcontentloaded', timeout: 90000 });
+            await page.waitForTimeout(20000);
+
+            const frames = page.frames();
+            console.log('Frames:', frames.map(f => f.url()));
+
+            let selected = null;
+            for (const frame of frames) {
+              try {
+                const html = await frame.content();
+                const score =
+                  (html.includes('Матвей Селёдочник') ? 100 : 0) +
+                  (html.includes('telegram-web-app.js') ? 40 : 0) +
+                  (html.includes('canvas-holder') ? 30 : 0) +
+                  (html.includes('Король Рассола') ? 20 : 0);
+                console.log('Candidate', frame.url(), 'bytes=', Buffer.byteLength(html), 'score=', score);
+                if (!selected || score > selected.score || (score === selected.score && html.length > selected.html.length)) {
+                  selected = { html, score, url: frame.url() };
+                }
+              } catch (error) {
+                console.log('Frame read failed:', frame.url(), error.message);
+              }
+            }
+
+            if (!selected || selected.score < 40) {
+              await page.screenshot({ path: 'qwen-diagnostic.png', fullPage: true });
+              throw new Error('Не найден HTML игры. Лучший кандидат: ' + JSON.stringify(selected && { score: selected.score, url: selected.url, bytes: selected.html.length }));
+            }
+
+            let html = selected.html;
+            if (!/^\s*<!doctype/i.test(html)) html = '<!DOCTYPE html>\n' + html;
+            fs.writeFileSync('index.html', html, 'utf8');
+            console.log('Saved game from', selected.url, 'bytes=', Buffer.byteLength(html));
+            await browser.close();
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
+
+          node extract-qwen.cjs
+          grep -q 'Матвей Селёдочник' index.html
+          grep -q 'telegram-web-app.js' index.html
+          grep -q 'canvas-holder' index.html
+
+      - name: Clean temporary files
+        run: |
+          rm -rf node_modules package.json package-lock.json extract-qwen.cjs qwen-diagnostic.png
 
       - name: Commit imported game
         run: |
