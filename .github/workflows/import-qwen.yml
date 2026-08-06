@@ -1,4 +1,4 @@
-name: Import Qwen game
+name: Clean imported Qwen game
 
 on:
   push:
@@ -9,112 +9,40 @@ permissions:
   contents: write
 
 jobs:
-  import:
+  clean:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Playwright
+      - name: Remove Qwen iframe wrapper
         run: |
-          npm init -y
-          npm install playwright@1.54.1
-          npx playwright install --with-deps chromium
-
-      - name: Extract deployed game from Qwen
-        env:
-          QWEN_URL: https://chat.qwen.ai/s/deploy/t_29abfe47-f098-44c9-a6c7-251b67a95766
-        run: |
-          cat > extract-qwen.cjs <<'EOF'
+          node <<'EOF'
           const fs = require('fs');
-          const { chromium } = require('playwright');
+          const source = fs.readFileSync('index.html', 'utf8');
+          const marker = '<html lang="ru">';
+          const markerIndex = source.indexOf(marker);
+          const start = source.lastIndexOf('<!DOCTYPE html>', markerIndex);
+          const end = source.indexOf('</html>', markerIndex);
 
-          const valid = html =>
-            html &&
-            html.includes('Матвей Селёдочник') &&
-            html.includes('telegram-web-app.js') &&
-            html.includes('canvas-holder');
+          if (markerIndex < 0 || start < 0 || end < 0) {
+            throw new Error('Не найден чистый HTML игры внутри Qwen wrapper.');
+          }
 
-          (async () => {
-            const browser = await chromium.launch({ headless: true });
-            const context = await browser.newContext({
-              locale: 'ru-RU',
-              viewport: { width: 1440, height: 900 },
-              userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-            });
-            const page = await context.newPage();
-            page.on('console', msg => console.log('[browser]', msg.type(), msg.text()));
-            page.on('pageerror', error => console.log('[pageerror]', error.message));
+          const html = source.slice(start, end + '</html>'.length).trim() + '\n';
+          const required = ['Матвей Селёдочник', 'telegram-web-app.js', 'canvas-holder'];
+          for (const value of required) {
+            if (!html.includes(value)) throw new Error('В игре отсутствует маркер: ' + value);
+          }
+          if (html.includes('id="htmlIframe"') || html.includes('window.parent.postMessage')) {
+            throw new Error('Qwen wrapper не был полностью удалён.');
+          }
 
-            await page.goto(process.env.QWEN_URL, { waitUntil: 'domcontentloaded', timeout: 90000 });
-            await page.waitForTimeout(20000);
-
-            let html = null;
-            let source = null;
-
-            for (const frame of page.frames()) {
-              try {
-                const iframe = frame.locator('#htmlIframe');
-                if (await iframe.count()) {
-                  const srcdoc = await iframe.first().getAttribute('srcdoc');
-                  console.log('Found #htmlIframe in', frame.url(), 'bytes=', srcdoc ? Buffer.byteLength(srcdoc) : 0);
-                  if (valid(srcdoc)) {
-                    html = srcdoc;
-                    source = frame.url() + ' -> #htmlIframe[srcdoc]';
-                    break;
-                  }
-                }
-              } catch (error) {
-                console.log('Nested iframe read failed:', frame.url(), error.message);
-              }
-            }
-
-            if (!html) {
-              for (const frame of page.frames()) {
-                try {
-                  const candidate = await frame.content();
-                  console.log('Frame', frame.url(), 'bytes=', Buffer.byteLength(candidate));
-                  if (valid(candidate) && frame.url() === 'about:srcdoc') {
-                    html = candidate;
-                    source = frame.url();
-                    break;
-                  }
-                } catch (error) {
-                  console.log('Frame content failed:', frame.url(), error.message);
-                }
-              }
-            }
-
-            if (!html) {
-              await page.screenshot({ path: 'qwen-diagnostic.png', fullPage: true });
-              throw new Error('Не удалось извлечь чистый HTML игры из Qwen deploy.');
-            }
-
-            if (!/^\s*<!doctype/i.test(html)) html = '<!DOCTYPE html>\n' + html;
-            fs.writeFileSync('index.html', html, 'utf8');
-            console.log('Saved clean game from', source, 'bytes=', Buffer.byteLength(html));
-            await browser.close();
-          })().catch(error => {
-            console.error(error);
-            process.exit(1);
-          });
+          fs.writeFileSync('index.html', html, 'utf8');
+          console.log('Clean index.html bytes:', Buffer.byteLength(html));
           EOF
 
-          node extract-qwen.cjs
-          grep -q 'Матвей Селёдочник' index.html
-          grep -q 'telegram-web-app.js' index.html
-          grep -q 'canvas-holder' index.html
-          if grep -q 'id="htmlIframe"' index.html; then
-            echo 'Qwen wrapper was not removed.' >&2
-            exit 1
-          fi
-
-      - name: Clean temporary files
-        run: |
-          rm -rf node_modules package.json package-lock.json extract-qwen.cjs qwen-diagnostic.png
-
-      - name: Commit imported game
+      - name: Commit clean game
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -123,5 +51,5 @@ jobs:
             echo 'No changes to commit.'
             exit 0
           fi
-          git commit -m 'Deploy clean Matvey Telegram game'
+          git commit -m 'Remove Qwen wrapper from Matvey game'
           git push
