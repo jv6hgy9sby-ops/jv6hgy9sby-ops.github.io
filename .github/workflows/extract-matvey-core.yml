@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/extract-matvey-core.yml
       - assets/core-v3-*.txt
+      - debug/extract-trigger.txt
   workflow_dispatch:
 
 permissions:
@@ -51,7 +52,7 @@ jobs:
             grep -nE 'keydown|keyup|KeyW|ArrowUp|ShiftLeft|KeyE|Space' debug/game-core-v3.js | head -n 250 || true
             echo
             echo '=== Movement and state references ==='
-            grep -nE 'controlsLocked|paused|gameRunning|playerCanMove|position\.(x|z)|translate|velocity|speed|walk|run|idle' debug/game-core-v3.js | head -n 500 || true
+            grep -nE 'controlsLocked|paused|gameRunning|playerCanMove|position\.(x|z)|translate|velocity|speed|walk|run|idle|footstep|step' debug/game-core-v3.js | head -n 700 || true
           } > debug/movement-search-report.txt
 
       - name: Commit extracted sources
