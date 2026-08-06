@@ -6,7 +6,7 @@
   var lightColor="#FAF7F2";
   var darkColor="#1F2328";
   var saved=null;
-  var assetVersion="20260806-live-contrast-v1";
+  var assetVersion="20260806-live-contrast-v2";
 
   try{
     saved=localStorage.getItem(storageKey);
@@ -60,7 +60,6 @@
   ensureLink("manifest","manifest.webmanifest?v="+assetVersion);
 
   appendStylesheet("assets/mobile-fixes.css?v="+assetVersion);
-  appendStylesheet("assets/contrast-fix.css?v="+assetVersion);
   appendScript("assets/navigation-extension.js?v="+assetVersion);
   appendScript("assets/mobile-fixes.js?v="+assetVersion);
 })();
