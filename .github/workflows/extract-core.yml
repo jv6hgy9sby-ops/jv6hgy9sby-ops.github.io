@@ -6,6 +6,10 @@ on:
       - '.github/workflows/extract-core.yml'
       - 'tools/extract-core.js'
       - 'debug/extract-trigger.txt'
+  pull_request:
+    paths:
+      - 'debug/extract-trigger.txt'
+      - 'tools/extract-core.js'
   workflow_dispatch:
 
 permissions:
@@ -16,15 +20,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Extract and inspect core
         run: node tools/extract-core.js
       - name: Commit extracted core
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add debug/game-core-decoded.js debug/core-analysis.txt
           git diff --cached --quiet || git commit -m "Extract readable game core for mobile input repair"
-          git push
+          if [ -n "$HEAD_REF" ]; then
+            git push origin HEAD:"$HEAD_REF"
+          else
+            git push
+          fi
