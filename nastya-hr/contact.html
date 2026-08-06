@@ -18,7 +18,7 @@
 <main class="page" id="top">
   <section class="page-hero no-media">
     <div class="container page-hero-grid">
-      <div class="hero-text reveal"><div class="breadcrumbs"><a href="index.html">Главная</a><span>/</span><span>Контакты</span></div><span class="eyebrow" style="margin-top:24px">Обсудить задачу</span><h1>Сначала выберите, для кого нужна работа</h1><p class="lead">Форма разделяет задачи специалиста и компании. Сейчас она только проверяет и собирает черновик — ничего не отправляет и не сохраняет.</p></div>
+      <div class="hero-text reveal"><div class="breadcrumbs"><a href="index.html">Главная</a><span>/</span><span>Контакты</span></div><span class="eyebrow" style="margin-top:24px">Обсудить задачу</span><h1>Подготовьте обращение по своей задаче</h1><p class="lead">Выберите, обращаетесь вы как HR-специалист или от имени компании, а затем коротко опишите ситуацию. Это демонстрационная форма: она проверяет поля и собирает текст обращения, но ничего не отправляет.</p></div>
       <div class="library-hero-mark reveal" aria-hidden="true">↗</div>
     </div>
   </section>
@@ -27,15 +27,15 @@
     <div class="container contact-grid">
       <div class="prose reveal">
         <span class="eyebrow">Текущий статус</span>
-        <h2>Реальные контакты ещё не добавлены</h2>
-        <p>Telegram и email будут опубликованы перед открытием записи. До этого форму можно использовать только для подготовки текста обращения.</p>
+        <h2>Контакты появятся перед открытием записи</h2>
+        <p>Telegram и email будут добавлены позже. Пока здесь можно подготовить текст обращения и скопировать его.</p>
         <div class="contact-list">
           <div class="contact-item"><b>Telegram</b><span>Будет добавлен перед открытием записи</span></div>
           <div class="contact-item"><b>Email</b><span>Будет добавлен перед открытием записи</span></div>
           <div class="contact-item"><b>Формат</b><span>Онлайн</span></div>
         </div>
         <p class="small" style="margin-top:20px">Не вводите конфиденциальные рабочие, медицинские, финансовые или другие чувствительные данные.</p>
-        <a class="text-link" href="privacy.html">Как обрабатываются данные</a>
+        <a class="text-link" href="privacy.html">Как работает форма и что сохраняется</a>
       </div>
 
       <div class="form-card reveal">
@@ -49,7 +49,7 @@
             </div>
           </fieldset>
 
-          <p class="form-guidance">Вы увидите только поля, которые относятся к выбранной аудитории. Проверка выполняется локально в браузере.</p>
+          <p class="form-guidance">После выбора аудитории форма покажет только те поля, которые относятся к вашей ситуации.</p>
 
           <div class="form-grid">
             <div class="field"><label for="lead-name">Имя *</label><input id="lead-name" name="name" type="text" autocomplete="name" placeholder="Как к вам обращаться?" required></div>
@@ -60,24 +60,24 @@
           <div class="audience-panel" data-audience-panel="specialist">
             <div class="field"><label for="specialist-interest">Направление *</label><select id="specialist-interest" name="specialist-interest" required><option value="hr-start">HR с нуля</option><option value="recruiting">Рекрутинг и сорсинг</option><option value="operations">HR Operations</option><option value="ai">AI для HR</option><option value="mentoring">Наставничество</option><option value="materials">База знаний и материалы</option></select></div>
             <div class="field"><label for="specialist-context">Текущая ситуация *</label><select id="specialist-context" name="specialist-context" required><option value="no-experience">Пока нет опыта в HR</option><option value="starting">Начинаю работать в HR</option><option value="working">Уже работаю в HR или рекрутинге</option><option value="changing-focus">Хочу сменить направление внутри HR</option></select></div>
-            <div class="field full"><label for="specialist-goal">Что нужно решить? *</label><textarea id="specialist-goal" name="specialist-goal" placeholder="Например: подготовить резюме, выбрать направление, улучшить сорсинг или разобрать рабочий кейс" required></textarea></div>
+            <div class="field full"><label for="specialist-goal">С чем нужна помощь? *</label><textarea id="specialist-goal" name="specialist-goal" placeholder="Например: подготовить резюме, выбрать направление, улучшить сорсинг или разобрать рабочий кейс" required></textarea></div>
           </div>
 
           <div class="audience-panel" data-audience-panel="company" hidden>
             <div class="field"><label for="company-interest">Направление *</label><select id="company-interest" name="company-interest" required disabled><option value="business">Консультация по HR-задаче</option><option value="vacancy-assistant">Рекрутинг и система работы с вакансией</option><option value="hr-operations">HR Operations и процессы</option><option value="onboarding">Onboarding и адаптация</option><option value="communications">Внутренние коммуникации</option><option value="analytics">HR-аналитика</option><option value="ai-assistant">AI-ассистент для HR</option></select></div>
             <div class="field"><label for="company-context">Текущая ситуация *</label><textarea id="company-context" name="company-context" placeholder="Как процесс устроен сейчас, кто участвует и где возникает сложность?" required disabled></textarea></div>
-            <div class="field full"><label for="company-goal">Какой результат нужен? *</label><textarea id="company-goal" name="company-goal" placeholder="Например: собрать бриф вакансии, описать onboarding или подготовить AI-сценарий" required disabled></textarea></div>
+            <div class="field full"><label for="company-goal">Что должно измениться? *</label><textarea id="company-goal" name="company-goal" placeholder="Например: уточнить требования к вакансии, описать onboarding или подготовить AI-сценарий" required disabled></textarea></div>
           </div>
 
-          <label class="consent"><input id="lead-consent" type="checkbox" required><span>Я понимаю, что форма не отправляет и не сохраняет данные. Политика описана на <a href="privacy.html" style="text-decoration:underline">отдельной странице</a>.</span></label>
+          <label class="consent"><input id="lead-consent" type="checkbox" required><span>Я понимаю, что это демонстрационная форма, и не указываю конфиденциальные или чувствительные данные. Подробнее — в <a href="privacy.html" style="text-decoration:underline">политике конфиденциальности</a>.</span></label>
           <button class="btn" type="submit">Проверить черновик</button>
           <p class="form-message" id="formMessage" aria-live="polite"></p>
         </form>
 
         <div class="draft-summary" id="draftSummary" hidden tabindex="-1" aria-live="polite">
-          <h3>Черновик готов, но не отправлен</h3>
-          <p>Проверьте ключевые параметры. Данные остаются только в текущей вкладке и исчезнут после закрытия или обновления страницы.</p>
-          <ul><li><b>Аудитория:</b> <span data-draft-value="audience"></span></li><li><b>Направление:</b> <span data-draft-value="direction"></span></li><li><b>Задача:</b> <span data-draft-value="goal"></span></li></ul>
+          <h3>Черновик обращения готов</h3>
+          <p>Проверьте основные данные. Когда текст будет готов, его можно скопировать.</p>
+          <ul><li><b>Аудитория</b> <span data-draft-value="audience"></span></li><li><b>Направление</b> <span data-draft-value="direction"></span></li><li><b>Задача</b> <span data-draft-value="goal"></span></li></ul>
           <button class="btn secondary" id="copyDraft" type="button" style="margin-top:16px">Скопировать черновик</button>
         </div>
       </div>
@@ -86,14 +86,15 @@
 
   <section class="section dark compact">
     <div class="container">
-      <div class="section-head reveal"><div><span class="eyebrow">Перед обращением</span><h2>Что делает запрос понятнее</h2></div><p>Достаточно кратко описать четыре вещи — без передачи лишних данных.</p></div>
+      <div class="section-head reveal"><div><span class="eyebrow">Перед обращением</span><h2>Что написать в обращении</h2></div><p>Достаточно коротко описать четыре пункта. Не добавляйте сведения, которые не нужны для разбора задачи.</p></div>
       <div class="process-line reveal">
-        <article class="process-step"><span>01</span><h3>Контекст</h3><p>Опыт специалиста или текущая ситуация в компании.</p></article>
-        <article class="process-step"><span>02</span><h3>Задача</h3><p>Что требуется изучить, создать или изменить.</p></article>
-        <article class="process-step"><span>03</span><h3>Приоритет</h3><p>Что важно решить в первую очередь.</p></article>
-        <article class="process-step"><span>04</span><h3>Ограничения</h3><p>Сроки, формат и доступные материалы.</p></article>
+        <article class="process-step"><span>01.</span><h3>Контекст</h3><p>Опыт специалиста или текущая ситуация в компании.</p></article>
+        <article class="process-step"><span>02.</span><h3>Задача</h3><p>Что требуется изучить, создать или изменить.</p></article>
+        <article class="process-step"><span>03.</span><h3>Приоритет</h3><p>Что важно решить в первую очередь.</p></article>
+        <article class="process-step"><span>04.</span><h3>Ограничения</h3><p>Сроки, формат и доступные материалы.</p></article>
       </div>
     </div>
   </section>
 </main>
 <div data-site-footer></div></body></html>
+
