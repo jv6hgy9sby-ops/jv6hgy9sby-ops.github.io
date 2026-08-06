@@ -1,6 +1,9 @@
 name: Audit live GitHub Pages
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
