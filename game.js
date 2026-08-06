@@ -1,27 +1,36 @@
 "use strict";
-window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
+window.MATVEY_LOADER_BUILD="4.0-direct-state";
+window.MATVEY_INPUT_BUILD="4.0-direct-state";
 (function(){
   var CORE_PARTS=["assets/core-v3-01.txt","assets/core-v3-02.txt","assets/core-v3-03.txt","assets/core-v3-04.txt","assets/core-v3-05.txt","assets/core-v3-06.txt"];
   var audioPackPromise=null;
   var audioUrls={};
   var activeAudio=new Set();
   var lastStepAt=0;
-  var keyBridgeListeners={keydown:[],keyup:[]};
-  var originalAddEventListener=EventTarget.prototype.addEventListener;
+  var debugPanel=null;
+  var debugTimer=0;
+  var patchInfo={candidates:[],registered:0,rewrites:0,build:window.MATVEY_INPUT_BUILD};
 
-  EventTarget.prototype.addEventListener=function(type,listener,options){
-    if((type==="keydown"||type==="keyup")&&listener){
-      var list=keyBridgeListeners[type];
-      var duplicate=list.some(function(item){return item.target===this&&item.listener===listener;},this);
-      if(!duplicate)list.push({target:this,listener:listener});
-    }
-    return originalAddEventListener.call(this,type,listener,options);
+  var input=window.MatveyInput={
+    moveX:0,
+    moveY:0,
+    run:false,
+    action:false,
+    actionPressed:false,
+    source:"none",
+    joystickPointerId:null,
+    runPointerId:null,
+    actionPointerId:null
   };
+  window.__matveyKeyStates=[];
+  window.__matveyInputPatchInfo=patchInfo;
 
   function fail(message,error){
     console.error(message,error||"");
     if(window.__fatal)window.__fatal(message);
   }
+
+  function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
 
   function isTouchDevice(){
     return Boolean(
@@ -35,14 +44,11 @@ window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
     if(document.body&&isTouchDevice())document.body.classList.add("touch");
   }
 
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",markTouchDevice,{once:true});
-  }else{
-    markTouchDevice();
-  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",markTouchDevice,{once:true});
+  else markTouchDevice();
 
   function fetchText(path){
-    return fetch(path,{cache:"force-cache"}).then(function(response){
+    return fetch(path,{cache:"no-cache"}).then(function(response){
       if(!response.ok)throw new Error(path+" HTTP "+response.status);
       return response.text();
     });
@@ -146,94 +152,144 @@ window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
     activeAudio.clear();
   }
 
-  function keyInfo(code){
-    var keyMap={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d",ShiftLeft:"Shift",KeyE:"e"};
-    var legacyMap={KeyW:87,KeyA:65,KeyS:83,KeyD:68,ShiftLeft:16,KeyE:69};
-    return {key:keyMap[code]||"",legacy:legacyMap[code]||0};
-  }
+  function escapeRegExp(value){return value.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
 
-  function makeBridgeEvent(type,code,target){
-    var info=keyInfo(code);
-    var prevented=false;
-    return {
-      type:type,
-      code:code,
-      key:info.key,
-      keyCode:info.legacy,
-      which:info.legacy,
-      charCode:0,
-      repeat:false,
-      bubbles:true,
-      cancelable:true,
-      composed:true,
-      isTrusted:false,
-      target:target||document.body||document,
-      currentTarget:target||document,
-      defaultPrevented:false,
-      preventDefault:function(){prevented=true;this.defaultPrevented=true;},
-      stopPropagation:function(){},
-      stopImmediatePropagation:function(){},
-      getModifierState:function(name){return name==="Shift"&&code==="ShiftLeft";},
-      __matveyMobileBridge:true,
-      wasPrevented:function(){return prevented;}
-    };
-  }
-
-  function callKeyListener(item,type,code){
-    var event=makeBridgeEvent(type,code,item.target);
-    try{
-      if(typeof item.listener==="function")item.listener.call(item.target,event);
-      else if(item.listener&&typeof item.listener.handleEvent==="function")item.listener.handleEvent.call(item.listener,event);
-      return true;
-    }catch(error){
-      console.error("Matvey mobile key listener failed:",type,code,error);
-      return false;
+  function discoverKeyStateCandidates(source){
+    var found={};
+    function collect(regex){
+      var match;
+      while((match=regex.exec(source)))found[match[1]]=true;
     }
+    collect(/\b([A-Za-z_$][\w$]*)\s*\[\s*[A-Za-z_$][\w$]*\.code\s*\]\s*=/g);
+    collect(/\b([A-Za-z_$][\w$]*)\s*\[\s*[A-Za-z_$][\w$]*\.key(?:\.toLowerCase\(\))?\s*\]\s*=/g);
+    collect(/\b([A-Za-z_$][\w$]*)\s*\[\s*["'](?:KeyW|KeyA|KeyS|KeyD|ArrowUp|ArrowDown|ArrowLeft|ArrowRight)["']\s*\]/g);
+    collect(/\b([A-Za-z_$][\w$]*)\.(?:KeyW|KeyA|KeyS|KeyD|ArrowUp|ArrowDown|ArrowLeft|ArrowRight)\b/g);
+    collect(/\b([A-Za-z_$][\w$]*)\.has\(\s*["'](?:KeyW|KeyA|KeyS|KeyD|ArrowUp|ArrowDown|ArrowLeft|ArrowRight)["']\s*\)/g);
+    return Object.keys(found).filter(function(name){return name!=="window"&&name!=="document"&&name!=="Math";});
   }
 
-  function dispatchNativeFallback(target,type,code){
-    if(!target||typeof target.dispatchEvent!=="function")return false;
-    var info=keyInfo(code);
-    var event;
-    try{
-      event=new KeyboardEvent(type,{code:code,key:info.key,bubbles:true,cancelable:true,composed:true,repeat:false});
-      try{Object.defineProperty(event,"keyCode",{get:function(){return info.legacy;}});}catch(error){}
-      try{Object.defineProperty(event,"which",{get:function(){return info.legacy;}});}catch(error){}
-    }catch(error){
-      event=new Event(type,{bubbles:true,cancelable:true});
-      try{Object.defineProperties(event,{code:{value:code},key:{value:info.key},keyCode:{value:info.legacy},which:{value:info.legacy}});}catch(ignore){}
-    }
-    target.dispatchEvent(event);
-    return true;
+  function exposeCandidateDeclarations(source,candidates){
+    candidates.forEach(function(name){
+      var escaped=escapeRegExp(name);
+      var declaration=new RegExp("\\b(?:const|let|var)\\s+"+escaped+"\\s*=\\s*[^;]+;");
+      source=source.replace(declaration,function(statement){
+        patchInfo.registered++;
+        return statement+"\n;try{if("+name+"&&window.__matveyKeyStates.indexOf("+name+")<0)window.__matveyKeyStates.push("+name+");}catch(__matveyExposeError){};";
+      });
+    });
+    return source;
   }
 
-  function dispatchKey(code,down){
-    var type=down?"keydown":"keyup";
-    var list=keyBridgeListeners[type].slice();
-    var delivered=false;
+  function isWriteContext(whole,offset,length){
+    var before=whole.slice(Math.max(0,offset-18),offset);
+    var after=whole.slice(offset+length);
+    if(/(?:const|let|var)\s+$/.test(before))return true;
+    if(/^\s*(?:=(?!=)|\+=|-=|\*=|\/=|&&=|\|\|=|\?\?=|\+\+|--)/.test(after))return true;
+    return false;
+  }
 
-    list.forEach(function(item){
-      if(callKeyListener(item,type,code))delivered=true;
+  function rewriteReads(source,regex,condition){
+    return source.replace(regex,function(){
+      var args=Array.prototype.slice.call(arguments);
+      var match=args[0];
+      var offset=args[args.length-2];
+      var whole=args[args.length-1];
+      if(isWriteContext(whole,offset,match.length))return match;
+      patchInfo.rewrites++;
+      return "("+match+"||("+condition+"))";
+    });
+  }
+
+  function patchCoreForDirectInput(source){
+    var candidates=discoverKeyStateCandidates(source);
+    patchInfo.candidates=candidates.slice();
+    source=exposeCandidateDeclarations(source,candidates);
+
+    var chain="(?:[A-Za-z_$][\\w$]*\\.)*[A-Za-z_$][\\w$]*";
+    var maps=[
+      {tokens:["KeyW","ArrowUp"],condition:"window.MatveyInput&&window.MatveyInput.moveY>0.12"},
+      {tokens:["KeyS","ArrowDown"],condition:"window.MatveyInput&&window.MatveyInput.moveY<-0.12"},
+      {tokens:["KeyA","ArrowLeft"],condition:"window.MatveyInput&&window.MatveyInput.moveX<-0.12"},
+      {tokens:["KeyD","ArrowRight"],condition:"window.MatveyInput&&window.MatveyInput.moveX>0.12"},
+      {tokens:["ShiftLeft","ShiftRight"],condition:"window.MatveyInput&&window.MatveyInput.run"},
+      {tokens:["KeyE","Space"],condition:"window.MatveyInput&&window.MatveyInput.action"}
+    ];
+
+    maps.forEach(function(map){
+      var tokenGroup=map.tokens.join("|");
+      source=rewriteReads(source,new RegExp("\\b"+chain+"\\.(?:"+tokenGroup+")\\b","g"),map.condition);
+      source=rewriteReads(source,new RegExp("\\b"+chain+"\\s*\\[\\s*[\\\"'](?:"+tokenGroup+")[\\\"']\\s*\\]","g"),map.condition);
+      source=rewriteReads(source,new RegExp("\\b"+chain+"\\.has\\(\\s*[\\\"'](?:"+tokenGroup+")[\\\"']\\s*\\)","g"),map.condition);
     });
 
-    var propertyTargets=[window,document,document.body];
-    propertyTargets.forEach(function(target){
-      if(!target)return;
-      var handler=target["on"+type];
-      if(typeof handler==="function"&&!list.some(function(item){return item.listener===handler;})){
-        try{handler.call(target,makeBridgeEvent(type,code,target));delivered=true;}catch(error){console.error(error);}
-      }
+    candidates.forEach(function(name){
+      var n=escapeRegExp(name);
+      var lowerMaps=[
+        {tokens:["w","W"],condition:"window.MatveyInput&&window.MatveyInput.moveY>0.12"},
+        {tokens:["s","S"],condition:"window.MatveyInput&&window.MatveyInput.moveY<-0.12"},
+        {tokens:["a","A"],condition:"window.MatveyInput&&window.MatveyInput.moveX<-0.12"},
+        {tokens:["d","D"],condition:"window.MatveyInput&&window.MatveyInput.moveX>0.12"},
+        {tokens:["shift","Shift"],condition:"window.MatveyInput&&window.MatveyInput.run"},
+        {tokens:["e","E"," "],condition:"window.MatveyInput&&window.MatveyInput.action"}
+      ];
+      lowerMaps.forEach(function(map){
+        var tokenGroup=map.tokens.map(escapeRegExp).join("|");
+        source=rewriteReads(source,new RegExp("\\b"+n+"\\s*\\[\\s*[\\\"'](?:"+tokenGroup+")[\\\"']\\s*\\]","g"),map.condition);
+        if(map.tokens.indexOf(" ")<0){
+          source=rewriteReads(source,new RegExp("\\b"+n+"\\.(?:"+tokenGroup+")\\b","g"),map.condition);
+          source=rewriteReads(source,new RegExp("\\b"+n+"\\.has\\(\\s*[\\\"'](?:"+tokenGroup+")[\\\"']\\s*\\)","g"),map.condition);
+        }
+      });
     });
 
-    if(!delivered){
-      dispatchNativeFallback(document,type,code);
-      dispatchNativeFallback(window,type,code);
-    }
-
-    window.__matveyMobileInput=window.__matveyMobileInput||{};
-    window.__matveyMobileInput[code]=down;
-    window.__matveyMobileInput.lastEvent={type:type,code:code,at:Date.now(),listeners:list.length};
+    source+="\n;try{window.__matveyCoreInputPatched=true;}catch(__matveyCorePatchFlagError){};";
+    return source;
   }
+
+  function setStateValue(state,key,value){
+    try{
+      if(state instanceof Set){if(value)state.add(key);else state.delete(key);return;}
+      if(state instanceof Map){state.set(key,value);return;}
+      if(state&&typeof state==="object")state[key]=value;
+    }catch(error){}
+  }
+
+  function applyVariants(state,variants,value){
+    variants.forEach(function(key){setStateValue(state,key,value);});
+  }
+
+  function syncCoreKeyStates(){
+    var states=window.__matveyKeyStates||[];
+    var forward=input.moveY>0.12,backward=input.moveY<-0.12,left=input.moveX<-0.12,right=input.moveX>0.12;
+    states.forEach(function(state){
+      applyVariants(state,["KeyW","ArrowUp","w","W",87,"87"],forward);
+      applyVariants(state,["KeyS","ArrowDown","s","S",83,"83"],backward);
+      applyVariants(state,["KeyA","ArrowLeft","a","A",65,"65"],left);
+      applyVariants(state,["KeyD","ArrowRight","d","D",68,"68"],right);
+      applyVariants(state,["ShiftLeft","ShiftRight","Shift","shift",16,"16"],input.run);
+      applyVariants(state,["KeyE","Space","e","E"," ",69,"69",32,"32"],input.action);
+    });
+  }
+
+  function resetMobileInput(){
+    input.moveX=0;
+    input.moveY=0;
+    input.run=false;
+    input.action=false;
+    input.actionPressed=false;
+    input.source="none";
+    input.joystickPointerId=null;
+    input.runPointerId=null;
+    input.actionPointerId=null;
+    var knob=document.getElementById("joystick-knob");
+    var run=document.getElementById("btn-run");
+    var action=document.getElementById("btn-action");
+    if(knob)knob.style.transform="translate(0px, 0px)";
+    if(run)run.classList.remove("active");
+    if(action)action.classList.remove("active");
+    syncCoreKeyStates();
+  }
+  window.resetMobileInput=resetMobileInput;
 
   function installMobileControls(){
     var zone=document.getElementById("joystick-zone");
@@ -241,143 +297,180 @@ window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
     var knob=document.getElementById("joystick-knob");
     var run=document.getElementById("btn-run");
     var action=document.getElementById("btn-action");
-    if(!zone||!base||!knob||!run||!action)return;
+    if(!zone||!base||!knob||!run||!action){
+      console.error("Matvey touch UI missing");
+      return;
+    }
 
     markTouchDevice();
-
-    var pointerId=null;
-    var pressed={KeyW:false,KeyA:false,KeyS:false,KeyD:false};
-    var heldCodes={ShiftLeft:false,KeyE:false};
     zone.style.touchAction="none";
     run.style.touchAction="none";
     action.style.touchAction="none";
 
-    function setKey(code,value){
-      if(pressed[code]===value)return;
-      pressed[code]=value;
-      dispatchKey(code,value);
-    }
-
-    function setHeld(code,value){
-      if(heldCodes[code]===value)return;
-      heldCodes[code]=value;
-      dispatchKey(code,value);
-    }
-
-    function releaseDirection(){
-      Object.keys(pressed).forEach(function(code){setKey(code,false);});
-      knob.style.transform="translate(0px, 0px)";
-    }
-
-    function updateDirection(clientX,clientY){
+    function updateJoystick(clientX,clientY){
       var rect=base.getBoundingClientRect();
       var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
       var dx=clientX-cx,dy=clientY-cy;
       var radius=Math.max(28,rect.width*.34);
       var length=Math.hypot(dx,dy)||1;
       if(length>radius){dx=dx/length*radius;dy=dy/length*radius;}
+      var nx=clamp(dx/radius,-1,1);
+      var ny=clamp(-dy/radius,-1,1);
+      var magnitude=Math.hypot(nx,ny);
+      var dead=.14;
+      if(magnitude<dead){nx=0;ny=0;}
+      else if(magnitude>1){nx/=magnitude;ny/=magnitude;}
+      input.moveX=nx;
+      input.moveY=ny;
+      input.source="touch";
       knob.style.transform="translate("+dx.toFixed(1)+"px,"+dy.toFixed(1)+"px)";
-      var nx=dx/radius,ny=dy/radius,dead=.18;
-      setKey("KeyA",nx<-dead);setKey("KeyD",nx>dead);
-      setKey("KeyW",ny<-dead);setKey("KeyS",ny>dead);
-      window.__matveyMobileInput=window.__matveyMobileInput||{};
-      window.__matveyMobileInput.vector={x:nx,y:ny,magnitude:Math.hypot(nx,ny)};
-      if(Math.hypot(nx,ny)>.28&&Date.now()-lastStepAt>310){
+      syncCoreKeyStates();
+      if(magnitude>.28&&Date.now()-lastStepAt>310){
         lastStepAt=Date.now();
-        playAudio("step","sfx",.32);
+        playAudio("step","sfx",.25);
       }
     }
 
-    function endPointer(event){
-      if(pointerId!==null&&event&&event.pointerId!==pointerId)return;
-      try{if(pointerId!==null&&zone.hasPointerCapture(pointerId))zone.releasePointerCapture(pointerId);}catch(error){}
-      pointerId=null;
-      releaseDirection();
+    function endJoystick(event){
+      if(input.joystickPointerId!==null&&event&&event.pointerId!==input.joystickPointerId)return;
+      try{if(input.joystickPointerId!==null&&zone.hasPointerCapture(input.joystickPointerId))zone.releasePointerCapture(input.joystickPointerId);}catch(error){}
+      input.joystickPointerId=null;
+      input.moveX=0;
+      input.moveY=0;
+      knob.style.transform="translate(0px, 0px)";
+      syncCoreKeyStates();
     }
 
-    zone.addEventListener("pointerdown",function(event){
-      if(event.pointerType==="mouse"&&event.button!==0)return;
-      if(pointerId!==null&&pointerId!==event.pointerId)return;
-      event.preventDefault();
-      event.stopPropagation();
-      pointerId=event.pointerId;
-      try{zone.setPointerCapture(pointerId);}catch(error){}
-      updateDirection(event.clientX,event.clientY);
-      playAudio("collect","sfx",.16);
-    },{passive:false});
-    zone.addEventListener("pointermove",function(event){
-      if(event.pointerId!==pointerId)return;
-      event.preventDefault();
-      event.stopPropagation();
-      updateDirection(event.clientX,event.clientY);
-    },{passive:false});
-    zone.addEventListener("pointerup",endPointer,{passive:false});
-    zone.addEventListener("pointercancel",endPointer,{passive:false});
-    zone.addEventListener("lostpointercapture",endPointer);
-    zone.addEventListener("contextmenu",function(event){event.preventDefault();});
-
-    function bindHold(button,code){
-      var id=null;
-      button.addEventListener("pointerdown",function(event){
+    if(window.PointerEvent){
+      zone.addEventListener("pointerdown",function(event){
         if(event.pointerType==="mouse"&&event.button!==0)return;
-        if(id!==null&&id!==event.pointerId)return;
+        if(input.joystickPointerId!==null&&input.joystickPointerId!==event.pointerId)return;
         event.preventDefault();
         event.stopPropagation();
-        id=event.pointerId;
-        try{button.setPointerCapture(id);}catch(error){}
-        setHeld(code,true);
-        button.classList.add("active");
-        playAudio(code==="KeyE"?"collect":"step","sfx",code==="KeyE"?.38:.22);
+        input.joystickPointerId=event.pointerId;
+        try{zone.setPointerCapture(event.pointerId);}catch(error){}
+        updateJoystick(event.clientX,event.clientY);
       },{passive:false});
-      function finish(event){
-        if(id!==null&&event&&event.pointerId!==id)return;
-        setHeld(code,false);
-        button.classList.remove("active");
-        id=null;
-      }
-      button.addEventListener("pointerup",finish,{passive:false});
-      button.addEventListener("pointercancel",finish,{passive:false});
-      button.addEventListener("lostpointercapture",finish);
-      button.addEventListener("contextmenu",function(event){event.preventDefault();});
-    }
-    bindHold(run,"ShiftLeft");
-    bindHold(action,"KeyE");
+      zone.addEventListener("pointermove",function(event){
+        if(event.pointerId!==input.joystickPointerId)return;
+        event.preventDefault();
+        event.stopPropagation();
+        updateJoystick(event.clientX,event.clientY);
+      },{passive:false});
+      zone.addEventListener("pointerup",endJoystick,{passive:false});
+      zone.addEventListener("pointercancel",endJoystick,{passive:false});
+      zone.addEventListener("lostpointercapture",endJoystick);
 
-    function reset(){
-      pointerId=null;
-      releaseDirection();
-      setHeld("ShiftLeft",false);
-      setHeld("KeyE",false);
-      run.classList.remove("active");
-      action.classList.remove("active");
+      run.addEventListener("pointerdown",function(event){
+        if(event.pointerType==="mouse"&&event.button!==0)return;
+        if(input.runPointerId!==null&&input.runPointerId!==event.pointerId)return;
+        event.preventDefault();
+        event.stopPropagation();
+        input.runPointerId=event.pointerId;
+        input.run=true;
+        input.source="touch";
+        run.classList.add("active");
+        try{run.setPointerCapture(event.pointerId);}catch(error){}
+        syncCoreKeyStates();
+      },{passive:false});
+      function endRun(event){
+        if(input.runPointerId!==null&&event&&event.pointerId!==input.runPointerId)return;
+        input.runPointerId=null;
+        input.run=false;
+        run.classList.remove("active");
+        syncCoreKeyStates();
+      }
+      run.addEventListener("pointerup",endRun,{passive:false});
+      run.addEventListener("pointercancel",endRun,{passive:false});
+      run.addEventListener("lostpointercapture",endRun);
+
+      action.addEventListener("pointerdown",function(event){
+        if(event.pointerType==="mouse"&&event.button!==0)return;
+        if(input.actionPointerId!==null&&input.actionPointerId!==event.pointerId)return;
+        event.preventDefault();
+        event.stopPropagation();
+        input.actionPointerId=event.pointerId;
+        input.action=true;
+        input.actionPressed=true;
+        input.source="touch";
+        action.classList.add("active");
+        try{action.setPointerCapture(event.pointerId);}catch(error){}
+        syncCoreKeyStates();
+        requestAnimationFrame(function(){input.actionPressed=false;});
+      },{passive:false});
+      function endAction(event){
+        if(input.actionPointerId!==null&&event&&event.pointerId!==input.actionPointerId)return;
+        input.actionPointerId=null;
+        input.action=false;
+        input.actionPressed=false;
+        action.classList.remove("active");
+        syncCoreKeyStates();
+      }
+      action.addEventListener("pointerup",endAction,{passive:false});
+      action.addEventListener("pointercancel",endAction,{passive:false});
+      action.addEventListener("lostpointercapture",endAction);
+    }else{
+      zone.addEventListener("touchstart",function(event){
+        if(!event.changedTouches.length)return;
+        event.preventDefault();
+        var touch=event.changedTouches[0];
+        input.joystickPointerId=touch.identifier;
+        updateJoystick(touch.clientX,touch.clientY);
+      },{passive:false});
+      zone.addEventListener("touchmove",function(event){
+        for(var i=0;i<event.changedTouches.length;i++){
+          var touch=event.changedTouches[i];
+          if(touch.identifier===input.joystickPointerId){event.preventDefault();updateJoystick(touch.clientX,touch.clientY);break;}
+        }
+      },{passive:false});
+      zone.addEventListener("touchend",function(event){
+        for(var i=0;i<event.changedTouches.length;i++)if(event.changedTouches[i].identifier===input.joystickPointerId){endJoystick(null);break;}
+      },{passive:false});
+      zone.addEventListener("touchcancel",function(){endJoystick(null);},{passive:false});
     }
-    window.addEventListener("blur",reset);
-    window.addEventListener("pagehide",reset);
-    window.addEventListener("orientationchange",reset);
-    document.addEventListener("visibilitychange",function(){if(document.hidden){reset();stopBridgeAudio();}});
+
+    [zone,run,action].forEach(function(element){element.addEventListener("contextmenu",function(event){event.preventDefault();});});
+
+    window.addEventListener("blur",resetMobileInput);
+    window.addEventListener("pagehide",resetMobileInput);
+    window.addEventListener("orientationchange",resetMobileInput);
+    document.addEventListener("visibilitychange",function(){if(document.hidden){resetMobileInput();stopBridgeAudio();}});
+
+    function keepCoreStateSynced(){
+      if(input.moveX||input.moveY||input.run||input.action)syncCoreKeyStates();
+      requestAnimationFrame(keepCoreStateSynced);
+    }
+    requestAnimationFrame(keepCoreStateSynced);
   }
 
   function installAudioHooks(){
     var start=document.getElementById("btn-start");
-    if(start){
-      start.addEventListener("pointerdown",function(){
-        playAudio("collect","sfx",.28);
-        playAudio("voice-start","voice",.88);
-      },{passive:true});
-    }
+    if(start)start.addEventListener("pointerdown",function(){playAudio("collect","sfx",.28);playAudio("voice-start","voice",.88);},{passive:true});
     document.querySelectorAll(".btn,.icon-btn").forEach(function(button){
       if(button===start)return;
       button.addEventListener("pointerdown",function(){playAudio("collect","sfx",.14);},{passive:true});
     });
-    var mute=document.getElementById("btn-mute");
-    if(mute)mute.addEventListener("click",function(){setTimeout(function(){if(!soundAllowed("sfx"))stopBridgeAudio();},0);});
+  }
+
+  function installInputDebug(){
+    var params=new URLSearchParams(location.search);
+    if(!params.has("inputdebug")&&!params.has("debug"))return;
+    debugPanel=document.createElement("div");
+    debugPanel.id="matvey-input-debug";
+    debugPanel.style.cssText="position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:9999;background:rgba(0,0,0,.78);color:#fff;padding:7px 10px;border-radius:10px;font:11px/1.35 monospace;pointer-events:none;max-width:70vw;white-space:pre-wrap";
+    document.body.appendChild(debugPanel);
+    window.setInterval(function(){
+      if(!debugPanel)return;
+      debugPanel.textContent="INPUT "+window.MATVEY_INPUT_BUILD+" | refs "+(window.__matveyKeyStates||[]).length+" | candidates "+patchInfo.candidates.join(",")+" | rewrites "+patchInfo.rewrites+"\nmoveX "+input.moveX.toFixed(2)+" moveY "+input.moveY.toFixed(2)+" run "+input.run+" action "+input.action+" pointer "+input.joystickPointerId+" corePatched "+Boolean(window.__matveyCoreInputPatched);
+    },250);
   }
 
   function installHotfixes(){
     markTouchDevice();
     installMobileControls();
     installAudioHooks();
-    document.documentElement.setAttribute("data-matvey-hotfix","3.4");
+    installInputDebug();
+    document.documentElement.setAttribute("data-matvey-input","4.0");
   }
 
   loadPortrait();
@@ -385,8 +478,10 @@ window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
   Promise.all(CORE_PARTS.map(fetchText)).then(function(parts){
     return inflate(decodeBase64(parts.join("")));
   }).then(function(code){
-    window.eval(code+"\n//# sourceURL=matvey-game-core-v3.js");
+    var patched=patchCoreForDirectInput(code);
+    window.eval(patched+"\n//# sourceURL=matvey-game-core-v4-direct-input.js");
     installHotfixes();
+    syncCoreKeyStates();
   }).catch(function(error){
     fail("Не удалось загрузить игровой код. Обновите страницу.",error);
   });
