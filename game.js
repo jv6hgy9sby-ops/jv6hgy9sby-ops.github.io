@@ -1,11 +1,22 @@
 "use strict";
-window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
+window.MATVEY_LOADER_BUILD="3.4-mobile-direct";
 (function(){
   var CORE_PARTS=["assets/core-v3-01.txt","assets/core-v3-02.txt","assets/core-v3-03.txt","assets/core-v3-04.txt","assets/core-v3-05.txt","assets/core-v3-06.txt"];
   var audioPackPromise=null;
   var audioUrls={};
   var activeAudio=new Set();
   var lastStepAt=0;
+  var keyBridgeListeners={keydown:[],keyup:[]};
+  var originalAddEventListener=EventTarget.prototype.addEventListener;
+
+  EventTarget.prototype.addEventListener=function(type,listener,options){
+    if((type==="keydown"||type==="keyup")&&listener){
+      var list=keyBridgeListeners[type];
+      var duplicate=list.some(function(item){return item.target===this&&item.listener===listener;},this);
+      if(!duplicate)list.push({target:this,listener:listener});
+    }
+    return originalAddEventListener.call(this,type,listener,options);
+  };
 
   function fail(message,error){
     console.error(message,error||"");
@@ -135,22 +146,93 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
     activeAudio.clear();
   }
 
-  function dispatchKey(code,down){
+  function keyInfo(code){
     var keyMap={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d",ShiftLeft:"Shift",KeyE:"e"};
     var legacyMap={KeyW:87,KeyA:65,KeyS:83,KeyD:68,ShiftLeft:16,KeyE:69};
-    var event=new KeyboardEvent(down?"keydown":"keyup",{
+    return {key:keyMap[code]||"",legacy:legacyMap[code]||0};
+  }
+
+  function makeBridgeEvent(type,code,target){
+    var info=keyInfo(code);
+    var prevented=false;
+    return {
+      type:type,
       code:code,
-      key:keyMap[code]||"",
+      key:info.key,
+      keyCode:info.legacy,
+      which:info.legacy,
+      charCode:0,
+      repeat:false,
       bubbles:true,
       cancelable:true,
       composed:true,
-      repeat:false
-    });
+      isTrusted:false,
+      target:target||document.body||document,
+      currentTarget:target||document,
+      defaultPrevented:false,
+      preventDefault:function(){prevented=true;this.defaultPrevented=true;},
+      stopPropagation:function(){},
+      stopImmediatePropagation:function(){},
+      getModifierState:function(name){return name==="Shift"&&code==="ShiftLeft";},
+      __matveyMobileBridge:true,
+      wasPrevented:function(){return prevented;}
+    };
+  }
+
+  function callKeyListener(item,type,code){
+    var event=makeBridgeEvent(type,code,item.target);
     try{
-      Object.defineProperty(event,"keyCode",{get:function(){return legacyMap[code]||0;}});
-      Object.defineProperty(event,"which",{get:function(){return legacyMap[code]||0;}});
-    }catch(error){}
-    document.dispatchEvent(event);
+      if(typeof item.listener==="function")item.listener.call(item.target,event);
+      else if(item.listener&&typeof item.listener.handleEvent==="function")item.listener.handleEvent.call(item.listener,event);
+      return true;
+    }catch(error){
+      console.error("Matvey mobile key listener failed:",type,code,error);
+      return false;
+    }
+  }
+
+  function dispatchNativeFallback(target,type,code){
+    if(!target||typeof target.dispatchEvent!=="function")return false;
+    var info=keyInfo(code);
+    var event;
+    try{
+      event=new KeyboardEvent(type,{code:code,key:info.key,bubbles:true,cancelable:true,composed:true,repeat:false});
+      try{Object.defineProperty(event,"keyCode",{get:function(){return info.legacy;}});}catch(error){}
+      try{Object.defineProperty(event,"which",{get:function(){return info.legacy;}});}catch(error){}
+    }catch(error){
+      event=new Event(type,{bubbles:true,cancelable:true});
+      try{Object.defineProperties(event,{code:{value:code},key:{value:info.key},keyCode:{value:info.legacy},which:{value:info.legacy}});}catch(ignore){}
+    }
+    target.dispatchEvent(event);
+    return true;
+  }
+
+  function dispatchKey(code,down){
+    var type=down?"keydown":"keyup";
+    var list=keyBridgeListeners[type].slice();
+    var delivered=false;
+
+    list.forEach(function(item){
+      if(callKeyListener(item,type,code))delivered=true;
+    });
+
+    var propertyTargets=[window,document,document.body];
+    propertyTargets.forEach(function(target){
+      if(!target)return;
+      var handler=target["on"+type];
+      if(typeof handler==="function"&&!list.some(function(item){return item.listener===handler;})){
+        try{handler.call(target,makeBridgeEvent(type,code,target));delivered=true;}catch(error){console.error(error);}
+      }
+    });
+
+    if(!delivered){
+      dispatchNativeFallback(document,type,code);
+      dispatchNativeFallback(window,type,code);
+    }
+
+    window.__matveyMobileInput=window.__matveyMobileInput||{};
+    window.__matveyMobileInput[code]=down;
+    window.__matveyMobileInput.lastEvent={type:type,code:code,at:Date.now(),listeners:list.length};
   }
 
   function installMobileControls(){
@@ -198,6 +280,8 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
       var nx=dx/radius,ny=dy/radius,dead=.18;
       setKey("KeyA",nx<-dead);setKey("KeyD",nx>dead);
       setKey("KeyW",ny<-dead);setKey("KeyS",ny>dead);
+      window.__matveyMobileInput=window.__matveyMobileInput||{};
+      window.__matveyMobileInput.vector={x:nx,y:ny,magnitude:Math.hypot(nx,ny)};
       if(Math.hypot(nx,ny)>.28&&Date.now()-lastStepAt>310){
         lastStepAt=Date.now();
         playAudio("step","sfx",.32);
@@ -215,6 +299,7 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
       if(event.pointerType==="mouse"&&event.button!==0)return;
       if(pointerId!==null&&pointerId!==event.pointerId)return;
       event.preventDefault();
+      event.stopPropagation();
       pointerId=event.pointerId;
       try{zone.setPointerCapture(pointerId);}catch(error){}
       updateDirection(event.clientX,event.clientY);
@@ -223,6 +308,7 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
     zone.addEventListener("pointermove",function(event){
       if(event.pointerId!==pointerId)return;
       event.preventDefault();
+      event.stopPropagation();
       updateDirection(event.clientX,event.clientY);
     },{passive:false});
     zone.addEventListener("pointerup",endPointer,{passive:false});
@@ -236,6 +322,7 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
         if(event.pointerType==="mouse"&&event.button!==0)return;
         if(id!==null&&id!==event.pointerId)return;
         event.preventDefault();
+        event.stopPropagation();
         id=event.pointerId;
         try{button.setPointerCapture(id);}catch(error){}
         setHeld(code,true);
@@ -290,7 +377,7 @@ window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
     markTouchDevice();
     installMobileControls();
     installAudioHooks();
-    document.documentElement.setAttribute("data-matvey-hotfix","3.3");
+    document.documentElement.setAttribute("data-matvey-hotfix","3.4");
   }
 
   loadPortrait();
