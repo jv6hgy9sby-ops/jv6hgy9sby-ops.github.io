@@ -1,0 +1,37 @@
+name: Import Qwen game
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-qwen.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download latest Qwen deployment
+        run: |
+          curl --location --fail --retry 3 \
+            --user-agent 'Mozilla/5.0' \
+            'https://chat.qwen.ai/s/deploy/t_29abfe47-f098-44c9-a6c7-251b67a95766' \
+            --output index.html
+          test -s index.html
+          grep -q '<!DOCTYPE html\|<!doctype html' index.html
+
+      - name: Commit imported game
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Deploy Matvey Telegram game from Qwen'
+          git push
