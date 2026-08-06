@@ -30,6 +30,12 @@ jobs:
           const fs = require('fs');
           const { chromium } = require('playwright');
 
+          const valid = html =>
+            html &&
+            html.includes('Матвей Селёдочник') &&
+            html.includes('telegram-web-app.js') &&
+            html.includes('canvas-holder');
+
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({
@@ -44,36 +50,50 @@ jobs:
             await page.goto(process.env.QWEN_URL, { waitUntil: 'domcontentloaded', timeout: 90000 });
             await page.waitForTimeout(20000);
 
-            const frames = page.frames();
-            console.log('Frames:', frames.map(f => f.url()));
+            let html = null;
+            let source = null;
 
-            let selected = null;
-            for (const frame of frames) {
+            for (const frame of page.frames()) {
               try {
-                const html = await frame.content();
-                const score =
-                  (html.includes('Матвей Селёдочник') ? 100 : 0) +
-                  (html.includes('telegram-web-app.js') ? 40 : 0) +
-                  (html.includes('canvas-holder') ? 30 : 0) +
-                  (html.includes('Король Рассола') ? 20 : 0);
-                console.log('Candidate', frame.url(), 'bytes=', Buffer.byteLength(html), 'score=', score);
-                if (!selected || score > selected.score || (score === selected.score && html.length > selected.html.length)) {
-                  selected = { html, score, url: frame.url() };
+                const iframe = frame.locator('#htmlIframe');
+                if (await iframe.count()) {
+                  const srcdoc = await iframe.first().getAttribute('srcdoc');
+                  console.log('Found #htmlIframe in', frame.url(), 'bytes=', srcdoc ? Buffer.byteLength(srcdoc) : 0);
+                  if (valid(srcdoc)) {
+                    html = srcdoc;
+                    source = frame.url() + ' -> #htmlIframe[srcdoc]';
+                    break;
+                  }
                 }
               } catch (error) {
-                console.log('Frame read failed:', frame.url(), error.message);
+                console.log('Nested iframe read failed:', frame.url(), error.message);
               }
             }
 
-            if (!selected || selected.score < 40) {
-              await page.screenshot({ path: 'qwen-diagnostic.png', fullPage: true });
-              throw new Error('Не найден HTML игры. Лучший кандидат: ' + JSON.stringify(selected && { score: selected.score, url: selected.url, bytes: selected.html.length }));
+            if (!html) {
+              for (const frame of page.frames()) {
+                try {
+                  const candidate = await frame.content();
+                  console.log('Frame', frame.url(), 'bytes=', Buffer.byteLength(candidate));
+                  if (valid(candidate) && frame.url() === 'about:srcdoc') {
+                    html = candidate;
+                    source = frame.url();
+                    break;
+                  }
+                } catch (error) {
+                  console.log('Frame content failed:', frame.url(), error.message);
+                }
+              }
             }
 
-            let html = selected.html;
+            if (!html) {
+              await page.screenshot({ path: 'qwen-diagnostic.png', fullPage: true });
+              throw new Error('Не удалось извлечь чистый HTML игры из Qwen deploy.');
+            }
+
             if (!/^\s*<!doctype/i.test(html)) html = '<!DOCTYPE html>\n' + html;
             fs.writeFileSync('index.html', html, 'utf8');
-            console.log('Saved game from', selected.url, 'bytes=', Buffer.byteLength(html));
+            console.log('Saved clean game from', source, 'bytes=', Buffer.byteLength(html));
             await browser.close();
           })().catch(error => {
             console.error(error);
@@ -85,6 +105,10 @@ jobs:
           grep -q 'Матвей Селёдочник' index.html
           grep -q 'telegram-web-app.js' index.html
           grep -q 'canvas-holder' index.html
+          if grep -q 'id="htmlIframe"' index.html; then
+            echo 'Qwen wrapper was not removed.' >&2
+            exit 1
+          fi
 
       - name: Clean temporary files
         run: |
@@ -99,5 +123,5 @@ jobs:
             echo 'No changes to commit.'
             exit 0
           fi
-          git commit -m 'Deploy Matvey Telegram game from Qwen'
+          git commit -m 'Deploy clean Matvey Telegram game'
           git push
