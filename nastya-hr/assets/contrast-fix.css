@@ -1,0 +1,5 @@
+html[data-theme="dark"] .featured-solution.primary h3,
+html[data-theme="dark"] .featured-solution.primary .solution-flow span{
+  color:#FAF7F2!important;
+  opacity:1!important;
+}
