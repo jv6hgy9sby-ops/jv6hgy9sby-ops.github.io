@@ -1,0 +1,68 @@
+name: Extract Matvey game core
+
+on:
+  push:
+    branches:
+      - extract-mobile-core
+    paths:
+      - .github/workflows/extract-matvey-core.yml
+      - assets/core-v3-*.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: extract-mobile-core
+          fetch-depth: 0
+
+      - name: Decode compressed core
+        shell: bash
+        run: |
+          mkdir -p debug
+          cat assets/core-v3-01.txt assets/core-v3-02.txt assets/core-v3-03.txt assets/core-v3-04.txt assets/core-v3-05.txt assets/core-v3-06.txt > /tmp/matvey-core.b64
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+          encoded = ''.join(Path('/tmp/matvey-core.b64').read_text().split())
+          decoded = base64.b64decode(encoded)
+          source = gzip.decompress(decoded).decode('utf-8')
+          Path('debug/game-core-v3.raw.js').write_text(source, encoding='utf-8')
+          print('Decoded bytes:', len(source.encode('utf-8')))
+          PY
+
+      - name: Format readable core
+        shell: bash
+        run: |
+          npx --yes prettier@3.3.3 debug/game-core-v3.raw.js --parser babel > debug/game-core-v3.js
+          node --check debug/game-core-v3.js
+
+      - name: Build movement search report
+        shell: bash
+        run: |
+          {
+            echo '=== Keyboard and input references ==='
+            grep -nE 'keydown|keyup|KeyW|ArrowUp|ShiftLeft|KeyE|Space' debug/game-core-v3.js | head -n 250 || true
+            echo
+            echo '=== Movement and state references ==='
+            grep -nE 'controlsLocked|paused|gameRunning|playerCanMove|position\.(x|z)|translate|velocity|speed|walk|run|idle' debug/game-core-v3.js | head -n 500 || true
+          } > debug/movement-search-report.txt
+
+      - name: Commit extracted sources
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add debug/game-core-v3.raw.js debug/game-core-v3.js debug/movement-search-report.txt
+          if git diff --cached --quiet; then
+            echo 'No extracted changes'
+            exit 0
+          fi
+          git commit -m 'Extract readable Matvey game core'
+          git push origin HEAD:extract-mobile-core
