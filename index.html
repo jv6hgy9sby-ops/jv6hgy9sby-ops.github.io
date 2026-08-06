@@ -9,8 +9,6 @@
 <meta name="description" content="Матвей Селёдочник — небольшая 3D-игра про очень занятого мопса.">
 <meta name="color-scheme" content="dark">
 <title>Матвей Селёдочник — Король Рассола</title>
-<link rel="preload" href="assets/matvey-cover.svg" as="image" type="image/svg+xml">
-<link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
 <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 <script>
 window.__fatalShown=false;
@@ -33,149 +31,42 @@ window.onerror=function(message,source,line,column,error){
   console.error('Matvey game error:',message,source,line,column,error);
 };
 </script>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div id="canvas-holder" aria-hidden="true"></div>
-
 <div id="hud" class="hidden">
   <div id="hud-top">
-    <div id="quest-box" class="glass">
-      <div id="quest-label"><span class="quest-dot"></span>Задание</div>
-      <div id="quest-text">…</div>
-    </div>
-    <div id="hud-buttons">
-      <button id="btn-pause" class="icon-btn" aria-label="Пауза">⏸</button>
-      <button id="btn-mute" class="icon-btn" aria-label="Звук">🔊</button>
-    </div>
+    <div id="quest-box" class="glass"><div id="quest-label"><span class="quest-dot"></span>Задание</div><div id="quest-text">…</div></div>
+    <div id="hud-buttons"><button id="btn-pause" class="icon-btn" aria-label="Пауза">⏸</button><button id="btn-mute" class="icon-btn" aria-label="Звук">🔊</button></div>
     <div id="hud-stats">
       <div class="stat glass"><span class="stat-icon">🥨</span><span id="crumbs-val">0 / 10</span></div>
       <div class="stat glass"><span class="stat-icon">👃</span><span id="smells-val">0 / 3</span></div>
-      <div id="mood-wrap" class="glass">
-        <div id="mood-label">Настроение Селёдочника</div>
-        <div id="mood-bar"><div id="mood-fill"></div></div>
-      </div>
+      <div id="mood-wrap" class="glass"><div id="mood-label">Настроение Селёдочника</div><div id="mood-bar"><div id="mood-fill"></div></div></div>
     </div>
   </div>
-  <div id="watch-ind" class="hidden"></div>
-  <div id="prompt" class="hidden"></div>
-  <div id="voice-bubble" role="status" aria-live="polite">
-    <div id="voice-name">Матвей</div>
-    <div id="voice-text"></div>
-  </div>
-  <div id="hold-wrap" class="hidden">
-    <div id="hold-label">Изучение важного запаха</div>
-    <div id="hold-bar"><div id="hold-fill"></div></div>
-  </div>
+  <div id="watch-ind" class="hidden"></div><div id="prompt" class="hidden"></div>
+  <div id="voice-bubble" role="status" aria-live="polite"><div id="voice-name">Матвей</div><div id="voice-text"></div></div>
+  <div id="hold-wrap" class="hidden"><div id="hold-label">Изучение важного запаха</div><div id="hold-bar"><div id="hold-fill"></div></div></div>
 </div>
-
-<div id="touch-ui">
-  <div id="joystick-zone" aria-label="Джойстик">
-    <div id="joystick-base"><div id="joystick-knob"></div></div>
-  </div>
-  <button id="btn-run">БЕГ</button>
-  <button id="btn-action"><span id="btn-action-label">ДЕЙСТВИЕ</span></button>
-</div>
-
+<div id="touch-ui"><div id="joystick-zone" aria-label="Джойстик"><div id="joystick-base"><div id="joystick-knob"></div></div></div><button id="btn-run">БЕГ</button><button id="btn-action"><span id="btn-action-label">ДЕЙСТВИЕ</span></button></div>
 <div id="screen-start" class="screen">
   <div class="panel start-panel">
     <div class="start-hero">
-      <div class="portrait-shell">
-        <div class="portrait"><img src="assets/matvey-cover.svg" alt="Матвей — палевый мопс в синей шлейке"></div>
-        <div class="portrait-badge">ГЛАВНЫЙ СПЕЦИАЛИСТ</div>
-      </div>
-      <div class="start-copy">
-        <div class="eyebrow">3D TELEGRAM MINI GAME</div>
-        <h1>МАТВЕЙ<br><span>СЕЛЁДОЧНИК</span></h1>
-        <div class="subtitle">Очень важная игра про очень занятого мопса.</div>
-        <div id="tg-greet" class="subtitle hidden"></div>
-        <div class="desc">Собери крошки. Победи бытовую технику. Проверь двор. Доберись до кровати.</div>
-        <div class="hero-tags"><span>🐾 5–10 минут</span><span>👑 4 достижения</span><span>📱 iPhone</span></div>
-      </div>
+      <div class="portrait-shell"><div class="portrait"><img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Crect width=%22300%22 height=%22300%22 fill=%22%23312822%22/%3E%3Ctext x=%22150%22 y=%22175%22 text-anchor=%22middle%22 font-size=%2290%22%3E🐶%3C/text%3E%3C/svg%3E" alt="Матвей — палевый мопс в синей шлейке"></div><div class="portrait-badge">ГЛАВНЫЙ СПЕЦИАЛИСТ</div></div>
+      <div class="start-copy"><div class="eyebrow">3D TELEGRAM MINI GAME</div><h1>МАТВЕЙ<br><span>СЕЛЁДОЧНИК</span></h1><div class="subtitle">Очень важная игра про очень занятого мопса.</div><div id="tg-greet" class="subtitle hidden"></div><div class="desc">Собери крошки. Победи бытовую технику. Проверь двор. Доберись до кровати.</div><div class="hero-tags"><span>🐾 5–10 минут</span><span>👑 4 достижения</span><span>📱 iPhone</span></div></div>
     </div>
     <button id="btn-start" class="btn btn-primary">Начать важные дела</button>
-    <div class="row">
-      <button id="btn-controls" class="btn">Управление</button>
-      <button id="btn-settings" class="btn">Настройки</button>
-    </div>
-    <button id="btn-ach" class="btn btn-quiet">Достижения</button>
-    <div id="best-line" class="best-line"></div>
+    <div class="row"><button id="btn-controls" class="btn">Управление</button><button id="btn-settings" class="btn">Настройки</button></div>
+    <button id="btn-ach" class="btn btn-quiet">Достижения</button><div id="best-line" class="best-line"></div>
   </div>
 </div>
-
-<div id="screen-controls" class="screen hidden">
-  <div class="panel compact-panel">
-    <div class="panel-kicker">ИНСТРУКТАЖ</div>
-    <h2>Управление</h2>
-    <div class="ctrl-grid">
-      <div class="ctrl-col"><b>Компьютер</b><br><kbd>W A S D</kbd> / стрелки — движение<br><kbd>Shift</kbd> — бег<br><kbd>E</kbd> / <kbd>Пробел</kbd> — действие<br>Мышь — камера<br><kbd>Esc</kbd> — пауза, <kbd>M</kbd> — звук</div>
-      <div class="ctrl-col"><b>Телефон</b><br>Джойстик — движение<br>«БЕГ» — ускорение<br>Большая кнопка — действие<br>Палец по миру — камера<br>Запах нужно удерживать</div>
-    </div>
-    <button id="btn-controls-back" class="btn btn-small">Назад</button>
-  </div>
-</div>
-
-<div id="screen-settings" class="screen hidden">
-  <div class="panel compact-panel">
-    <div class="panel-kicker">ПАРАМЕТРЫ СМЕНЫ</div>
-    <h2>Настройки</h2>
-    <div class="set-row"><span><i>🔊</i> Общий звук</span><div id="set-sound" class="switch"></div></div>
-    <div class="set-row range-row"><span><i>🎵</i> Музыка</span><input id="set-music" type="range" min="0" max="1" step=".05"></div>
-    <div class="set-row range-row"><span><i>🎙</i> Голос Матвея</span><input id="set-voice" type="range" min="0" max="1" step=".05"></div>
-    <div class="set-row range-row"><span><i>🐾</i> Эффекты</span><input id="set-sfx" type="range" min="0" max="1" step=".05"></div>
-    <div class="set-row range-row"><span><i>🎥</i> Камера</span><input id="set-sens" type="range" min=".5" max="2" step=".1"></div>
-    <div class="set-row"><span><i>🫧</i> Спокойная камера</span><div id="set-calm" class="switch"></div></div>
-    <div class="set-row"><span><i>✨</i> Качество</span><div class="seg"><button id="q-low">Низкое</button><button id="q-med">Среднее</button><button id="q-high">Высокое</button></div></div>
-    <button id="btn-add-home" class="btn hidden">Добавить Матвея на экран</button>
-    <button id="btn-reset-progress" class="btn btn-danger-soft">Сбросить достижения и рекорд</button>
-    <button id="btn-settings-back" class="btn btn-small">Назад</button>
-  </div>
-</div>
-
-<div id="screen-achievements" class="screen hidden">
-  <div class="panel compact-panel">
-    <div class="panel-kicker">ЛИЧНОЕ ДЕЛО</div>
-    <h2>Достижения</h2>
-    <div id="ach-list"></div>
-    <button id="btn-ach-back" class="btn btn-small">Назад</button>
-  </div>
-</div>
-
-<div id="screen-pause" class="screen hidden">
-  <div class="panel compact-panel pause-panel">
-    <div class="panel-kicker">ОПЕРАТИВНАЯ ПАУЗА</div>
-    <h2>Матвей ждёт</h2>
-    <div class="subtitle">Недовольно. Но профессионально.</div>
-    <button id="btn-resume" class="btn btn-primary">Продолжить</button>
-    <button id="btn-pause-settings" class="btn">Настройки</button>
-    <button id="btn-quit" class="btn btn-quiet">Главное меню</button>
-  </div>
-</div>
-
-<div id="screen-finale" class="screen hidden finale-screen">
-  <div class="panel compact-panel finale-panel">
-    <div class="panel-kicker">СМЕНА ЗАКРЫТА</div>
-    <h2>ДЕНЬ ПРОЖИТ НЕ ЗРЯ</h2>
-    <div class="subtitle finale-name">МАТВЕЙ СЕЛЁДОЧНИК</div>
-    <div class="crown">КОРОЛЬ РАССОЛА 👑</div>
-    <div class="stat-line"><span>Крошки</span><span id="fin-crumbs">10 / 10</span></div>
-    <div class="stat-line"><span>Запахи</span><span id="fin-smells">3 / 3</span></div>
-    <div class="stat-line"><span>Время</span><span id="fin-time">00:00</span></div>
-    <div class="stat-line"><span>Атаки пылесоса</span><span id="fin-vacuum">0</span></div>
-    <div class="stat-line"><span>Попытки на кровать</span><span id="fin-attempts">0</span></div>
-    <button id="btn-again" class="btn btn-primary">Ещё один идеальный день</button>
-    <button id="btn-menu" class="btn btn-quiet">Главное меню</button>
-  </div>
-</div>
-
-<div id="portrait-warning" class="hidden"><div class="rot">📱</div><strong>Поверните телефон горизонтально</strong><span>Матвею нужен оперативный простор.</span></div>
-<div id="fade"></div>
-<div id="ach-toast"><div id="ach-toast-title"></div><div id="ach-toast-desc"></div></div>
-<div id="error-screen" class="hidden"><div class="panel compact-panel"><div class="error-ico">🐶</div><h2>Матвей остановил работу</h2><div id="error-text" class="desc"></div></div></div>
-<noscript><div class="noscript">Для игры нужен JavaScript.</div></noscript>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="game.js?v=6"></script>
+<div id="screen-controls" class="screen hidden"><div class="panel compact-panel"><div class="panel-kicker">ИНСТРУКТАЖ</div><h2>Управление</h2><div class="ctrl-grid"><div class="ctrl-col"><b>Компьютер</b><br><kbd>W A S D</kbd> / стрелки — движение<br><kbd>Shift</kbd> — бег<br><kbd>E</kbd> / <kbd>Пробел</kbd> — действие<br>Мышь — камера<br><kbd>Esc</kbd> — пауза, <kbd>M</kbd> — звук</div><div class="ctrl-col"><b>Телефон</b><br>Джойстик — движение<br>«БЕГ» — ускорение<br>Большая кнопка — действие<br>Палец по миру — камера<br>Запах нужно удерживать</div></div><button id="btn-controls-back" class="btn btn-small">Назад</button></div></div>
+<div id="screen-settings" class="screen hidden"><div class="panel compact-panel"><div class="panel-kicker">ПАРАМЕТРЫ СМЕНЫ</div><h2>Настройки</h2><div class="set-row"><span><i>🔊</i> Общий звук</span><div id="set-sound" class="switch"></div></div><div class="set-row range-row"><span><i>🎵</i> Музыка</span><input id="set-music" type="range" min="0" max="1" step=".05"></div><div class="set-row range-row"><span><i>🎙</i> Голос Матвея</span><input id="set-voice" type="range" min="0" max="1" step=".05"></div><div class="set-row range-row"><span><i>🐾</i> Эффекты</span><input id="set-sfx" type="range" min="0" max="1" step=".05"></div><div class="set-row range-row"><span><i>🎥</i> Камера</span><input id="set-sens" type="range" min=".5" max="2" step=".1"></div><div class="set-row"><span><i>🫧</i> Спокойная камера</span><div id="set-calm" class="switch"></div></div><div class="set-row"><span><i>✨</i> Качество</span><div class="seg"><button id="q-low">Низкое</button><button id="q-med">Среднее</button><button id="q-high">Высокое</button></div></div><button id="btn-add-home" class="btn hidden">Добавить Матвея на экран</button><button id="btn-reset-progress" class="btn btn-danger-soft">Сбросить достижения и рекорд</button><button id="btn-settings-back" class="btn btn-small">Назад</button></div></div>
+<div id="screen-achievements" class="screen hidden"><div class="panel compact-panel"><div class="panel-kicker">ЛИЧНОЕ ДЕЛО</div><h2>Достижения</h2><div id="ach-list"></div><button id="btn-ach-back" class="btn btn-small">Назад</button></div></div>
+<div id="screen-pause" class="screen hidden"><div class="panel compact-panel pause-panel"><div class="panel-kicker">ОПЕРАТИВНАЯ ПАУЗА</div><h2>Матвей ждёт</h2><div class="subtitle">Недовольно. Но профессионально.</div><button id="btn-resume" class="btn btn-primary">Продолжить</button><button id="btn-pause-settings" class="btn">Настройки</button><button id="btn-quit" class="btn btn-quiet">Главное меню</button></div></div>
+<div id="screen-finale" class="screen hidden finale-screen"><div class="panel compact-panel finale-panel"><div class="panel-kicker">СМЕНА ЗАКРЫТА</div><h2>ДЕНЬ ПРОЖИТ НЕ ЗРЯ</h2><div class="subtitle finale-name">МАТВЕЙ СЕЛЁДОЧНИК</div><div class="crown">КОРОЛЬ РАССОЛА 👑</div><div class="stat-line"><span>Крошки</span><span id="fin-crumbs">10 / 10</span></div><div class="stat-line"><span>Запахи</span><span id="fin-smells">3 / 3</span></div><div class="stat-line"><span>Время</span><span id="fin-time">00:00</span></div><div class="stat-line"><span>Атаки пылесоса</span><span id="fin-vacuum">0</span></div><div class="stat-line"><span>Попытки на кровать</span><span id="fin-attempts">0</span></div><button id="btn-again" class="btn btn-primary">Ещё один идеальный день</button><button id="btn-menu" class="btn btn-quiet">Главное меню</button></div></div>
+<div id="portrait-warning" class="hidden"><div class="rot">📱</div><strong>Поверните телефон горизонтально</strong><span>Матвею нужен оперативный простор.</span></div><div id="fade"></div><div id="ach-toast"><div id="ach-toast-title"></div><div id="ach-toast-desc"></div></div><div id="error-screen" class="hidden"><div class="panel compact-panel"><div class="error-ico">🐶</div><h2>Матвей остановил работу</h2><div id="error-text" class="desc"></div></div></div><noscript><div class="noscript">Для игры нужен JavaScript.</div></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script><script src="game.js?v=8"></script>
 </body>
 </html>
