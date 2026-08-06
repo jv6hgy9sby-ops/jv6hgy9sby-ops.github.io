@@ -104,7 +104,8 @@ code{padding:.12em .35em;border:1px solid var(--color-border);background:var(--c
 .not-found p{color:var(--color-text-muted)}
 html[data-theme="dark"] .hero-home::before{opacity:.62}
 html[data-theme="dark"] .hero-caption,html[data-theme="dark"] .editorial-note{background:rgba(32,36,42,.95)}
-html[data-theme="dark"] .featured-solution.primary{background:#111419;color:var(--color-on-dark)}
+html[data-theme="dark"] .featured-solution.primary{background:#111419;color:var(--color-on-dark);--text-primary:var(--color-on-dark);--ink:var(--color-on-dark)}
+html[data-theme="dark"] .featured-solution.primary h3,html[data-theme="dark"] .featured-solution.primary .solution-flow span{color:var(--color-on-dark)}
 html[data-theme="dark"] .site-footer{background:#111419}
 html[data-theme="dark"] .not-found{background:#121519;color:var(--color-on-dark)}
 html[data-theme="dark"] .not-found p{color:var(--color-on-dark-muted)}
