@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
+window.MATVEY_LOADER_BUILD="3.3-mobile-controls";
 (function(){
   var CORE_PARTS=["assets/core-v3-01.txt","assets/core-v3-02.txt","assets/core-v3-03.txt","assets/core-v3-04.txt","assets/core-v3-05.txt","assets/core-v3-06.txt"];
   var audioPackPromise=null;
@@ -10,6 +10,24 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
   function fail(message,error){
     console.error(message,error||"");
     if(window.__fatal)window.__fatal(message);
+  }
+
+  function isTouchDevice(){
+    return Boolean(
+      (navigator.maxTouchPoints&&navigator.maxTouchPoints>0)||
+      (window.matchMedia&&window.matchMedia("(pointer: coarse)").matches)||
+      ("ontouchstart" in window)
+    );
+  }
+
+  function markTouchDevice(){
+    if(document.body&&isTouchDevice())document.body.classList.add("touch");
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",markTouchDevice,{once:true});
+  }else{
+    markTouchDevice();
   }
 
   function fetchText(path){
@@ -119,7 +137,20 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
 
   function dispatchKey(code,down){
     var keyMap={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d",ShiftLeft:"Shift",KeyE:"e"};
-    window.dispatchEvent(new KeyboardEvent(down?"keydown":"keyup",{code:code,key:keyMap[code]||"",bubbles:true,cancelable:true}));
+    var legacyMap={KeyW:87,KeyA:65,KeyS:83,KeyD:68,ShiftLeft:16,KeyE:69};
+    var event=new KeyboardEvent(down?"keydown":"keyup",{
+      code:code,
+      key:keyMap[code]||"",
+      bubbles:true,
+      cancelable:true,
+      composed:true,
+      repeat:false
+    });
+    try{
+      Object.defineProperty(event,"keyCode",{get:function(){return legacyMap[code]||0;}});
+      Object.defineProperty(event,"which",{get:function(){return legacyMap[code]||0;}});
+    }catch(error){}
+    document.dispatchEvent(event);
   }
 
   function installMobileControls(){
@@ -128,10 +159,13 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
     var knob=document.getElementById("joystick-knob");
     var run=document.getElementById("btn-run");
     var action=document.getElementById("btn-action");
-    if(!zone||!base||!knob)return;
+    if(!zone||!base||!knob||!run||!action)return;
+
+    markTouchDevice();
 
     var pointerId=null;
     var pressed={KeyW:false,KeyA:false,KeyS:false,KeyD:false};
+    var heldCodes={ShiftLeft:false,KeyE:false};
     zone.style.touchAction="none";
     run.style.touchAction="none";
     action.style.touchAction="none";
@@ -139,6 +173,12 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
     function setKey(code,value){
       if(pressed[code]===value)return;
       pressed[code]=value;
+      dispatchKey(code,value);
+    }
+
+    function setHeld(code,value){
+      if(heldCodes[code]===value)return;
+      heldCodes[code]=value;
       dispatchKey(code,value);
     }
 
@@ -167,45 +207,65 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
     function endPointer(event){
       if(pointerId!==null&&event&&event.pointerId!==pointerId)return;
       try{if(pointerId!==null&&zone.hasPointerCapture(pointerId))zone.releasePointerCapture(pointerId);}catch(error){}
-      pointerId=null;releaseDirection();
+      pointerId=null;
+      releaseDirection();
     }
 
     zone.addEventListener("pointerdown",function(event){
       if(event.pointerType==="mouse"&&event.button!==0)return;
-      event.preventDefault();pointerId=event.pointerId;
+      if(pointerId!==null&&pointerId!==event.pointerId)return;
+      event.preventDefault();
+      pointerId=event.pointerId;
       try{zone.setPointerCapture(pointerId);}catch(error){}
       updateDirection(event.clientX,event.clientY);
       playAudio("collect","sfx",.16);
     },{passive:false});
     zone.addEventListener("pointermove",function(event){
       if(event.pointerId!==pointerId)return;
-      event.preventDefault();updateDirection(event.clientX,event.clientY);
+      event.preventDefault();
+      updateDirection(event.clientX,event.clientY);
     },{passive:false});
     zone.addEventListener("pointerup",endPointer,{passive:false});
     zone.addEventListener("pointercancel",endPointer,{passive:false});
     zone.addEventListener("lostpointercapture",endPointer);
+    zone.addEventListener("contextmenu",function(event){event.preventDefault();});
 
     function bindHold(button,code){
       var id=null;
       button.addEventListener("pointerdown",function(event){
-        event.preventDefault();id=event.pointerId;
+        if(event.pointerType==="mouse"&&event.button!==0)return;
+        if(id!==null&&id!==event.pointerId)return;
+        event.preventDefault();
+        id=event.pointerId;
         try{button.setPointerCapture(id);}catch(error){}
-        dispatchKey(code,true);button.classList.add("active");
+        setHeld(code,true);
+        button.classList.add("active");
         playAudio(code==="KeyE"?"collect":"step","sfx",code==="KeyE"?.38:.22);
       },{passive:false});
       function finish(event){
         if(id!==null&&event&&event.pointerId!==id)return;
-        dispatchKey(code,false);button.classList.remove("active");id=null;
+        setHeld(code,false);
+        button.classList.remove("active");
+        id=null;
       }
       button.addEventListener("pointerup",finish,{passive:false});
       button.addEventListener("pointercancel",finish,{passive:false});
       button.addEventListener("lostpointercapture",finish);
+      button.addEventListener("contextmenu",function(event){event.preventDefault();});
     }
     bindHold(run,"ShiftLeft");
     bindHold(action,"KeyE");
 
-    function reset(){releaseDirection();dispatchKey("ShiftLeft",false);dispatchKey("KeyE",false);}
+    function reset(){
+      pointerId=null;
+      releaseDirection();
+      setHeld("ShiftLeft",false);
+      setHeld("KeyE",false);
+      run.classList.remove("active");
+      action.classList.remove("active");
+    }
     window.addEventListener("blur",reset);
+    window.addEventListener("pagehide",reset);
     window.addEventListener("orientationchange",reset);
     document.addEventListener("visibilitychange",function(){if(document.hidden){reset();stopBridgeAudio();}});
   }
@@ -227,9 +287,10 @@ window.MATVEY_LOADER_BUILD="3.2-mobile-hotfix";
   }
 
   function installHotfixes(){
+    markTouchDevice();
     installMobileControls();
     installAudioHooks();
-    document.documentElement.setAttribute("data-matvey-hotfix","3.2");
+    document.documentElement.setAttribute("data-matvey-hotfix","3.3");
   }
 
   loadPortrait();
