@@ -211,6 +211,33 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     dig: "assets/audio/voice/voice-dig.wav",
     sleep: "assets/audio/voice/voice-sleep.wav",
     finale: "assets/audio/voice/voice-finale.wav",
+    "dialogue-start-0": "assets/audio/voice/voice-dialogue-start-0.wav",
+    "dialogue-start-1": "assets/audio/voice/voice-dialogue-start-1.wav",
+    "dialogue-start-2": "assets/audio/voice/voice-dialogue-start-2.wav",
+    "dialogue-start-3": "assets/audio/voice/voice-dialogue-start-3.wav",
+    "dialogue-idle-0": "assets/audio/voice/voice-dialogue-idle-0.wav",
+    "dialogue-idle-1": "assets/audio/voice/voice-dialogue-idle-1.wav",
+    "dialogue-idle-2": "assets/audio/voice/voice-dialogue-idle-2.wav",
+    "dialogue-idle-3": "assets/audio/voice/voice-dialogue-idle-3.wav",
+    "dialogue-walk-0": "assets/audio/voice/voice-dialogue-walk-0.wav",
+    "dialogue-walk-1": "assets/audio/voice/voice-dialogue-walk-1.wav",
+    "dialogue-walk-2": "assets/audio/voice/voice-dialogue-walk-2.wav",
+    "dialogue-run-0": "assets/audio/voice/voice-dialogue-run-0.wav",
+    "dialogue-run-1": "assets/audio/voice/voice-dialogue-run-1.wav",
+    "dialogue-run-2": "assets/audio/voice/voice-dialogue-run-2.wav",
+    "dialogue-humanNear-0": "assets/audio/voice/voice-dialogue-human-near-0.wav",
+    "dialogue-humanNear-1": "assets/audio/voice/voice-dialogue-human-near-1.wav",
+    "dialogue-humanNear-2": "assets/audio/voice/voice-dialogue-human-near-2.wav",
+    "dialogue-humanWait-0": "assets/audio/voice/voice-dialogue-human-wait-0.wav",
+    "dialogue-humanWait-1": "assets/audio/voice/voice-dialogue-human-wait-1.wav",
+    "dialogue-humanWait-2": "assets/audio/voice/voice-dialogue-human-wait-2.wav",
+    "dialogue-oink-0": "assets/audio/voice/voice-dialogue-oink-0.wav",
+    "dialogue-oink-1": "assets/audio/voice/voice-dialogue-oink-1.wav",
+    "dialogue-oink-2": "assets/audio/voice/voice-dialogue-oink-2.wav",
+    random: "assets/audio/voice/voice-random.wav",
+    vacuumHit: "assets/audio/voice/voice-vacuum-hit.wav",
+    bedFreeText: "assets/audio/voice/voice-bed-free-text.wav",
+    sound: "assets/audio/voice/voice-sound.wav",
   };
   var AVAILABLE_AUDIO_PATHS = {
     "assets/audio/sfx/collect.mp3": true,
@@ -514,7 +541,8 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       var t = nowMs(), lines = this.lines[category];
       if (!lines || (!options.force && t - this.lastAt < (options.cooldown || this.cooldown))) return false;
       this.lastAt = t;
-      speakMatvey("dialogue-" + category, lines[Math.floor(Math.random() * lines.length)], { force: Boolean(options.force) });
+      var index = Math.floor(Math.random() * lines.length);
+      speakMatvey("dialogue-" + category + "-" + index, lines[index], { force: Boolean(options.force) });
       return true;
     }
   };
@@ -2770,6 +2798,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   }
 
   /* Camera */
+  var CAMERA_BASE_HEIGHT = 0.48;
   var cam = {
     yaw: -2.4,
     pitch: 0.32,
@@ -2820,7 +2849,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     // follow target so movement is not delayed by two consecutive filters.
     fx = cam.followTarget.x; fy = cam.followTarget.y; fz = cam.followTarget.z;
     var h = cam.distance * Math.cos(cam.pitch),
-      v = cam.distance * Math.sin(cam.pitch) + 0.23;
+      v = cam.distance * Math.sin(cam.pitch) + CAMERA_BASE_HEIGHT;
     cam.targetPos.set(
       fx - Math.sin(cam.yaw) * h,
       fy + v,
@@ -4545,6 +4574,49 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     freeze.style.cssText = button.style.cssText; freeze.onclick = function () { debug.cameraFrozen = !debug.cameraFrozen; freeze.textContent = debug.cameraFrozen ? "CAMERA FROZEN" : "CAMERA LIVE"; }; freeze.textContent = "CAMERA LIVE";
     panel.appendChild(button); panel.appendChild(freeze); panel.appendChild(text); document.body.appendChild(panel);
     setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\nperf " + s.performance.frameAverage.toFixed(1) + "ms p95 " + s.performance.frameP95.toFixed(1) + " long " + s.performance.longFrames + " n" + s.performance.frameSamples + "\nrender calls " + s.performance.calls + " tris " + s.performance.triangles + " geo " + s.performance.geometries + " tex " + s.performance.textures + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
+  })();
+
+  /* telemetry=1: opt-in mobile frame telemetry; no DOM or work in normal play. */
+  (function installPerformanceTelemetry() {
+    if (new URLSearchParams(location.search).get("telemetry") !== "1") return;
+    var telemetry = { lastNow: 0, samples: [], longFrames: 0 };
+    var baseFrameForTelemetry = frame;
+    frame = function (now) {
+      if (telemetry.lastNow) {
+        var frameMs = now - telemetry.lastNow;
+        telemetry.samples.push(frameMs);
+        if (frameMs > 50) telemetry.longFrames++;
+        if (telemetry.samples.length > 240) telemetry.samples.shift();
+      }
+      telemetry.lastNow = now;
+      baseFrameForTelemetry(now);
+    };
+    window.MatveyTelemetry = {
+      snapshot: function () {
+        var values = telemetry.samples.slice().sort(function (a, b) { return a - b; });
+        var average = values.length
+          ? values.reduce(function (sum, value) { return sum + value; }, 0) / values.length
+          : 0;
+        var p95 = values.length
+          ? values[Math.min(values.length - 1, Math.floor(values.length * 0.95))]
+          : 0;
+        var info = renderer.info.render;
+        return {
+          samples: values.length,
+          averageMs: average,
+          p95Ms: p95,
+          longFrames: telemetry.longFrames,
+          quality: settings.quality,
+          dpr: renderer.getPixelRatio(),
+          shadows: renderer.shadowMap.enabled,
+          shadowMap: dirLight.shadow.mapSize.x,
+          drawCalls: info.calls,
+          triangles: info.triangles,
+          geometries: renderer.info.memory.geometries,
+          textures: renderer.info.memory.textures,
+        };
+      },
+    };
   })();
 
   /* Start */
