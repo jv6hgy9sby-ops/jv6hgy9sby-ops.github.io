@@ -2732,6 +2732,8 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     look: new THREE.Vector3(0.6, 0.47, -1.4),
     targetPos: new THREE.Vector3(),
     ray: new THREE.Vector3(),
+    followTarget: new THREE.Vector3(),
+    manualUntil: 0,
   };
   function blocked(x, z, r) {
     r = r || 0.1;
@@ -2750,16 +2752,25 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     return 4.45;
   }
   function updateCamera(dt) {
-    var k = 1 - Math.exp(-dt * (settings.calm ? 2.15 : 5.4));
+    var calm = settings.calm,
+      k = 1 - Math.exp(-dt * (calm ? 2.15 : 5.4)),
+      focusK = 1 - Math.exp(-dt * (calm ? 3.1 : 7.2)),
+      lookK = 1 - Math.exp(-dt * (calm ? 2.4 : 5.1)),
+      manualCamera = nowMs() < cam.manualUntil;
     var talkZoom =
       voiceState.speaking && pug.move < 0.18 && !Game.sleeping ? 0.24 : 0;
     cam.distance = lerp(cam.distance, desiredDistance() - talkZoom, k);
-    cam.pitch = lerp(cam.pitch, Game.sleeping ? 0.48 : 0.32, k);
-    if (Game.mode === "finale" && !settings.calm) cam.yaw += dt * 0.038;
-    var fx = Game.sleeping ? bedCX : pug.pos.x,
-      fy = Game.sleeping ? 0.85 : 0.46,
-      fz = Game.sleeping ? bedCZ : pug.pos.z;
-    cam.focus.set(fx, fy, fz);
+    cam.pitch = lerp(cam.pitch, Game.sleeping ? 0.48 : 0.32, focusK);
+    if (Game.mode === "finale" && !calm) cam.yaw += dt * 0.038;
+    if (!Game.sleeping && !manualCamera && pug.move > 0.08)
+      cam.yaw = angleLerp(cam.yaw, pug.yaw, 1 - Math.exp(-dt * (calm ? 0.16 : 0.34)));
+    var ahead = Game.sleeping ? 0 : clamp(pug.move * (calm ? 0.12 : 0.24), 0, calm ? 0.12 : 0.24),
+      fx = Game.sleeping ? bedCX : pug.pos.x + Math.sin(pug.yaw) * ahead,
+      fy = Game.sleeping ? 0.85 : 0.43,
+      fz = Game.sleeping ? bedCZ : pug.pos.z + Math.cos(pug.yaw) * ahead;
+    cam.followTarget.set(fx, fy, fz);
+    cam.focus.lerp(cam.followTarget, focusK);
+    fx = cam.focus.x; fy = cam.focus.y; fz = cam.focus.z;
     var h = cam.distance * Math.cos(cam.pitch),
       v = cam.distance * Math.sin(cam.pitch) + 0.23;
     cam.targetPos.set(
@@ -2785,7 +2796,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     }
     if (cam.targetPos.y < 0.4) cam.targetPos.y = 0.4;
     camera.position.lerp(cam.targetPos, k);
-    cam.look.lerp(cam.focus, 1 - Math.exp(-dt * (settings.calm ? 3.1 : 7.6)));
+    cam.look.lerp(cam.focus, lookK);
     camera.lookAt(cam.look);
   }
 
@@ -2855,6 +2866,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     var dx = e.clientX - mouse.x;
     mouse.x = e.clientX;
     cam.yaw -= dx * 0.0032 * settings.sens;
+    cam.manualUntil = nowMs() + 2000;
   });
   window.addEventListener("mouseup", function () {
     mouse.down = false;
@@ -2889,6 +2901,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
             cameraTouch.x = t.clientX;
             cameraTouch.y = t.clientY;
             cam.yaw -= dx * 0.0043 * settings.sens;
+            cam.manualUntil = nowMs() + 2000;
           }
         }
       },
@@ -3386,7 +3399,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         humanRoot.position.x,
         humanRoot.position.z,
         1.5,
-        "Сесть и начать переговоры",
+        "ДЕЙСТВИЕ — провести переговоры",
         "ПРОСИТЬ",
         begSequence,
       );
@@ -3406,7 +3419,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         -6.5,
         1.6,
         "Положить поводок у двери",
-        "ГУЛЯТЬ",
+        "ОТКРЫТЬ",
         function () {
           Game.doorSequence = true;
           doorSequence();
@@ -3800,6 +3813,11 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       interact2 ? interact2.label : null,
       interact2 ? interact2.short : null,
     );
+    if (interact2 && interact2.short === "ПРОСИТЬ" && !Game.humanPrompted) {
+      Game.humanPrompted = true;
+      hapticImpact("light");
+      speakMatvey("humanNear", "Так. Начинаем переговоры.");
+    }
     updateParticles(dt);
     animatePug(dt);
     updateCamera(dt);
@@ -3837,6 +3855,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       mode: "menu",
       paused: false,
       inputLocked: true,
+      humanPrompted: false,
       quest: 0,
       crumbs: 0,
       smells: 0,
@@ -4395,8 +4414,9 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
 
   /* debugInput=1: observe the existing input → movement pipeline without changing it. */
   (function installInputDiagnostics() {
-    if (new URLSearchParams(location.search).get("debugInput") !== "1") return;
-    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC2";
+    var debugParams = new URLSearchParams(location.search);
+    if (debugParams.get("debugInput") !== "1" && debugParams.get("debugPerf") !== "1") return;
+    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC3";
     var debug = {
       build: window.MATVEY_DEBUG_BUILD_ID,
       frames: 0, updates: 0, inputs: 0, collisions: 0,
@@ -4431,7 +4451,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     marker.name = "PUG ROOT MARKER"; marker.position.set(0, 1.3, 0); marker.renderOrder = 999; pugRoot.add(marker);
     function world(object) { var out = new THREE.Vector3(); if (object) object.getWorldPosition(out); return { x: out.x, y: out.y, z: out.z }; }
     function screen(worldPoint) { var out = new THREE.Vector3(worldPoint.x, worldPoint.y, worldPoint.z).project(camera); return { x: out.x, y: out.y, visible: out.z >= -1 && out.z <= 1 }; }
-    function getState() { scene.updateMatrixWorld(true); var rootWorld = world(pugRoot), visual = glb.active ? glb.model : proceduralPug, visualWorld = world(visual), cameraWorld = world(camera), anchorWorld = world(humanRoot); return { build: debug.build, href: location.href, isTouch: IS_TOUCH, maxTouchPoints: navigator.maxTouchPoints, pointerEvents: "PointerEvent" in window, mode: Game.mode, paused: Game.paused, inputLocked: Game.inputLocked, orientationPause: pausedByOrientation, sequence: Boolean(sequence), sleeping: Game.sleeping, joystick: { active: joystick.active, id: joystick.id, x: joystick.x, y: joystick.y }, input: debug.lastInput, velocity: { x: pug.vel.x, z: pug.vel.z }, pug: { x: pug.pos.x, z: pug.pos.z, state: pug.state, move: pug.move, phase: pug.phase }, root: { local: { x: pugRoot.position.x, y: pugRoot.position.y, z: pugRoot.position.z }, world: rootWorld, matrixAutoUpdate: pugRoot.matrixAutoUpdate, matrixWorldNeedsUpdate: pugRoot.matrixWorldNeedsUpdate, children: pugRoot.children.length }, visual: { player: glb.active ? "GLB" : "procedural", glbActive: glb.active, proceduralVisible: proceduralPug.visible, glbVisible: glb.model ? glb.model.visible : null, world: visualWorld, proceduralLocal: { x: proceduralPug.position.x, y: proceduralPug.position.y, z: proceduralPug.position.z }, proceduralRotation: { x: proceduralPug.rotation.x, y: proceduralPug.rotation.y, z: proceduralPug.rotation.z }, proceduralScale: { x: proceduralPug.scale.x, y: proceduralPug.scale.y, z: proceduralPug.scale.z }, bodyWorld: world(P.body), hierarchy: { bodyParent: P.body.parent === proceduralPug, proceduralParent: proceduralPug.parent === pugRoot, rootParent: pugRoot.parent === scene, sceneHasRoot: scene.children.indexOf(pugRoot) >= 0, sceneHasProcedural: scene.children.indexOf(proceduralPug) >= 0 } }, marker: { world: world(marker), visible: marker.visible }, camera: { frozen: debug.cameraFrozen, world: cameraWorld, local: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: cam.focus.x, y: cam.focus.y, z: cam.focus.z }, distanceToPug: Math.sqrt(Math.pow(cameraWorld.x-rootWorld.x,2)+Math.pow(cameraWorld.y-rootWorld.y,2)+Math.pow(cameraWorld.z-rootWorld.z,2)) }, screen: { pug: screen(rootWorld), marker: screen(world(marker)), anchor: screen(anchorWorld) }, animation: { animatePugCalls: debug.animateCalls, glbAnimation: glb.current ? glb.current._clip.name : null }, frames: debug.frames, updates: debug.updates, inputs: debug.inputs, dt: debug.lastDt, collisions: debug.collisions, lastReset: debug.lastReset, lastResetTime: debug.lastResetTime, touch: debug.touch, lastWriter: debug.lastWriter, result: debug.result }; }
+    function getState() { scene.updateMatrixWorld(true); var rootWorld = world(pugRoot), visual = glb.active ? glb.model : proceduralPug, visualWorld = world(visual), cameraWorld = world(camera), anchorWorld = world(humanRoot), info = renderer.info.render; return { build: debug.build, href: location.href, isTouch: IS_TOUCH, maxTouchPoints: navigator.maxTouchPoints, pointerEvents: "PointerEvent" in window, mode: Game.mode, paused: Game.paused, inputLocked: Game.inputLocked, orientationPause: pausedByOrientation, sequence: Boolean(sequence), sleeping: Game.sleeping, joystick: { active: joystick.active, id: joystick.id, x: joystick.x, y: joystick.y }, input: debug.lastInput, velocity: { x: pug.vel.x, z: pug.vel.z }, pug: { x: pug.pos.x, z: pug.pos.z, state: pug.state, move: pug.move, phase: pug.phase }, root: { local: { x: pugRoot.position.x, y: pugRoot.position.y, z: pugRoot.position.z }, world: rootWorld, matrixAutoUpdate: pugRoot.matrixAutoUpdate, matrixWorldNeedsUpdate: pugRoot.matrixWorldNeedsUpdate, children: pugRoot.children.length }, visual: { player: glb.active ? "GLB" : "procedural", glbActive: glb.active, proceduralVisible: proceduralPug.visible, glbVisible: glb.model ? glb.model.visible : null, world: visualWorld, proceduralLocal: { x: proceduralPug.position.x, y: proceduralPug.position.y, z: proceduralPug.position.z }, proceduralRotation: { x: proceduralPug.rotation.x, y: proceduralPug.rotation.y, z: proceduralPug.rotation.z }, proceduralScale: { x: proceduralPug.scale.x, y: proceduralPug.scale.y, z: proceduralPug.scale.z }, bodyWorld: world(P.body), hierarchy: { bodyParent: P.body.parent === proceduralPug, proceduralParent: proceduralPug.parent === pugRoot, rootParent: pugRoot.parent === scene, sceneHasRoot: scene.children.indexOf(pugRoot) >= 0, sceneHasProcedural: scene.children.indexOf(proceduralPug) >= 0 } }, marker: { world: world(marker), visible: marker.visible }, camera: { frozen: debug.cameraFrozen, world: cameraWorld, local: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: cam.focus.x, y: cam.focus.y, z: cam.focus.z }, distanceToPug: Math.sqrt(Math.pow(cameraWorld.x-rootWorld.x,2)+Math.pow(cameraWorld.y-rootWorld.y,2)+Math.pow(cameraWorld.z-rootWorld.z,2)) }, screen: { pug: screen(rootWorld), marker: screen(world(marker)), anchor: screen(anchorWorld) }, animation: { animatePugCalls: debug.animateCalls, glbAnimation: glb.current ? glb.current._clip.name : null }, performance: { calls: info.calls, triangles: info.triangles, points: info.points, lines: info.lines, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }, frames: debug.frames, updates: debug.updates, inputs: debug.inputs, dt: debug.lastDt, collisions: debug.collisions, lastReset: debug.lastReset, lastResetTime: debug.lastResetTime, touch: debug.touch, lastWriter: debug.lastWriter, result: debug.result }; }
     function testMovement() {
       var reason = gates(); if (reason) { debug.result = { pass: false, reason: reason }; return Promise.resolve(debug.result); }
       debug.testing = true; var before = point(), marks = { frames: debug.frames, updates: debug.updates, inputs: debug.inputs, collisions: debug.collisions }, previous = { active: joystick.active, x: joystick.x, y: joystick.y, id: joystick.id };
@@ -4444,7 +4464,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     button.textContent = "TEST MOVEMENT"; button.style.cssText = "pointer-events:auto;width:100%;padding:8px;margin-bottom:6px"; button.onclick = function () { testMovement(); };
     freeze.style.cssText = button.style.cssText; freeze.onclick = function () { debug.cameraFrozen = !debug.cameraFrozen; freeze.textContent = debug.cameraFrozen ? "CAMERA FROZEN" : "CAMERA LIVE"; }; freeze.textContent = "CAMERA LIVE";
     panel.appendChild(button); panel.appendChild(freeze); panel.appendChild(text); document.body.appendChild(panel);
-    setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
+    setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\nperf calls " + s.performance.calls + " tris " + s.performance.triangles + " geo " + s.performance.geometries + " tex " + s.performance.textures + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
   })();
 
   /* Start */
