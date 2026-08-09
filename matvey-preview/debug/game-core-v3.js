@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
+window.MATVEY_BUILD = "rc6.1-profiler3";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -603,6 +603,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     $("mood-fill").style.width = Game.mood + "%";
   }
   var hudRuntime = { promptVisible: false, promptText: "", actionLabel: "ДЕЙСТВИЕ", holdVisible: false, holdPercent: -1, watchVisible: false, watchState: "" };
+  var PerfProfiler = null;
   function setPrompt(text, short) {
     var visible = Boolean(text), label = short || "ДЕЙСТВИЕ", prompt = $("prompt");
     if (hudRuntime.promptVisible !== visible) {
@@ -3257,6 +3258,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     AudioManager.stopVacuum();
   }
   function collectCrumb(c) {
+    if (PerfProfiler) PerfProfiler.event("crumb");
     c.taken = true;
     c.mesh.visible = false;
     Game.crumbs++;
@@ -3296,6 +3298,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     c.mesh.position.set(c.x, 0.11, c.z);
   }
   function begSequence() {
+    if (PerfProfiler) PerfProfiler.event("human");
     Game.inputLocked = true;
     pug.forcedYaw = yawTo(
       pug.pos.x,
@@ -3349,6 +3352,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     );
   }
   function doorSequence() {
+    if (PerfProfiler) PerfProfiler.event("door");
     if (Game.leashDropped) return;
     Game.inputLocked = true;
     Game.hasLeash = false;
@@ -3642,18 +3646,26 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       );
   }
   function updatePlaying(dt) {
+    var perf = PerfProfiler;
     Game.time += dt;
     Game.bumpCooldown -= dt;
+    if (perf) perf.begin("sequence");
     var inSequence = updateSequence(dt);
+    if (perf) perf.end("sequence");
     var area = pug.pos.z < -7 ? "yard" : "home";
     if (area !== Game.area) {
       Game.area = area;
       AudioManager.setArea(area);
     }
     if (!inSequence && !Game.inputLocked && !Game.sleeping) {
+      if (perf) perf.begin("input");
       var input = inputVector(),
         running = keys.ShiftLeft || keys.ShiftRight || touchRun,
         speed = running ? 3.35 : 1.85;
+      if (perf) {
+        perf.end("input");
+        perf.begin("movement");
+      }
       var fx = Math.sin(cam.yaw),
         fz = Math.cos(cam.yaw),
         rx = -fz,
@@ -3669,7 +3681,15 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       }
       pug.pos.x += pug.vel.x * dt;
       pug.pos.z += pug.vel.z * dt;
+      if (perf) {
+        perf.end("movement");
+        perf.begin("collision");
+      }
       collide(pug.pos, 0.34);
+      if (perf) {
+        perf.end("collision");
+        perf.begin("movement");
+      }
       pug.move = lerp(pug.move, clamp(sp / 3.1, 0, 1), dt * 8);
       if (sp > 0.14) {
         pug.phase += sp * dt * (running ? 6.2 : 5.4);
@@ -3711,6 +3731,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
           "На кровать нельзя только до тех пор, пока никто не видит.",
         );
       }
+      if (perf) perf.end("movement");
     } else {
       pug.move = lerp(pug.move, 0, dt * 6);
       if (pug.forcedYaw !== null)
@@ -3719,6 +3740,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     pugRoot.position.set(pug.pos.x, pug.groundY + pug.visualY, pug.pos.z);
     pugRoot.rotation.y = pug.yaw;
     pugShadow.position.y = 0.012 - pug.visualY;
+    if (perf) perf.begin("interact");
     if (actionQueued) {
       actionQueued = false;
       if (!inSequence && !Game.inputLocked && !Game.sleeping) {
@@ -3750,10 +3772,12 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
         if (pug.state === "sniff") setPugState("idle");
       }
     } else setHold(null);
+    if (perf) perf.end("interact");
     if (Game.quest === 3) {
       Game.q3Timer -= dt;
       if (Game.q3Timer <= 0) quest(4);
     }
+    if (perf) perf.begin("scene");
     crumbs.forEach(function (c) {
       if (c.taken) return;
       c.phase += dt * 3;
@@ -3823,6 +3847,8 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       }
     }
     if (Game.quest >= 7 && Game.vacuumActive) dockVacuum();
+    if (perf) perf.end("scene");
+    if (perf) perf.begin("npc");
     if (human.target) {
       var dx = human.target.x - humanRoot.position.x,
         dz = human.target.z - humanRoot.position.z,
@@ -3878,6 +3904,8 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       );
       H.eyeSprite.visible = Game.looking;
     } else if (Game.quest !== 7) H.eyeSprite.visible = false;
+    if (perf) perf.end("npc");
+    if (perf) perf.begin("scene");
     Object.keys(doors).forEach(function (k) {
       var d = doors[k];
       d.value = lerp(d.value, d.target, dt * 3);
@@ -3906,6 +3934,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
         MatveyDialogue.say("idle", { cooldown: 20000 });
       }
     }
+    if (perf) perf.end("scene");
     if (Game.sleeping) {
       Game.sleepT += dt;
       Game.snoreT -= dt;
@@ -3922,6 +3951,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       if (Game.sleepT > 7.1 && screenOpen("screen-finale") === false)
         openFinale();
     }
+    if (perf) perf.begin("hud");
     var interact2 = null;
     if (!inSequence && !Game.inputLocked && !Game.sleeping) {
       var smell2 = nearestSmell();
@@ -3938,9 +3968,18 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       hapticImpact("light");
       MatveyDialogue.say("humanNear", { cooldown: 20000 });
     }
+    if (perf) {
+      perf.end("hud");
+      perf.begin("animation");
+    }
     updateParticles(dt);
     animatePug(dt);
+    if (perf) {
+      perf.end("animation");
+      perf.begin("camera");
+    }
     updateCamera(dt);
+    if (perf) perf.end("camera");
   }
   function openFinale() {
     Game.mode = "finale";
@@ -4539,7 +4578,9 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
         updateParticles(dt);
       }
     }
+    if (PerfProfiler) PerfProfiler.begin("render");
     renderer.render(scene, camera);
+    if (PerfProfiler) PerfProfiler.end("render");
   }
 
   /* debugInput=1: observe the existing input → movement pipeline without changing it. */
@@ -4608,37 +4649,107 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\nperf " + s.performance.frameAverage.toFixed(1) + "ms p95 " + s.performance.frameP95.toFixed(1) + " long " + s.performance.longFrames + " n" + s.performance.frameSamples + "\nrender calls " + s.performance.calls + " tris " + s.performance.triangles + " geo " + s.performance.geometries + " tex " + s.performance.textures + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
   })();
 
-  /* telemetry=1: opt-in mobile frame telemetry; no DOM or work in normal play. */
+  /* telemetry=1: fixed-window profiler; normal gameplay only sees null guards. */
   (function installPerformanceTelemetry() {
     if (new URLSearchParams(location.search).get("telemetry") !== "1") return;
-    var telemetry = { lastNow: 0, samples: [], longFrames: 0 };
+    var WINDOW = 240;
+    var names = ["sequence", "input", "movement", "collision", "interact", "npc", "scene", "audio", "hud", "animation", "camera", "render"];
+    function Ring() {
+      this.values = new Float32Array(WINDOW);
+      this.count = 0;
+      this.cursor = 0;
+      this.sum = 0;
+    }
+    Ring.prototype.push = function (value) {
+      if (this.count === WINDOW) this.sum -= this.values[this.cursor];
+      else this.count++;
+      this.values[this.cursor] = value;
+      this.sum += value;
+      this.cursor = (this.cursor + 1) % WINDOW;
+    };
+    Ring.prototype.summary = function () {
+      var count = this.count, values = new Array(count), i;
+      for (i = 0; i < count; i++) values[i] = this.values[i];
+      values.sort(function (a, b) { return a - b; });
+      return {
+        samples: count,
+        average: count ? this.sum / count : 0,
+        p95: count ? values[Math.min(count - 1, Math.floor(count * 0.95))] : 0,
+        max: count ? values[count - 1] : 0,
+        long: values.filter(function (value) { return value > 50; }).length,
+      };
+    };
+    var rings = { frame: new Ring(), cpu: new Ring() }, eventRings = { crumb: new Ring(), human: new Ring(), door: new Ring() };
+    names.forEach(function (name) { rings[name] = new Ring(); });
+    var profiler = {
+      active: "",
+      startedAt: 0,
+      frameStartedAt: 0,
+      lastRaf: 0,
+      pendingEvent: "",
+      frameTotals: {},
+      begin: function (name) {
+        this.active = name;
+        this.startedAt = performance.now();
+      },
+      end: function (name) {
+        if (this.active !== name) return;
+        this.frameTotals[name] += performance.now() - this.startedAt;
+        this.active = "";
+      },
+      event: function (name) {
+        this.pendingEvent = name;
+      },
+      startFrame: function (now) {
+        this.frameStartedAt = performance.now();
+        if (this.lastRaf) rings.frame.push(now - this.lastRaf);
+        this.lastRaf = now;
+        for (var i = 0; i < names.length; i++) this.frameTotals[names[i]] = 0;
+      },
+      endFrame: function () {
+        var cpu = performance.now() - this.frameStartedAt;
+        rings.cpu.push(cpu);
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i];
+          rings[name].push(profiler.frameTotals[name]);
+        }
+        if (this.pendingEvent && eventRings[this.pendingEvent]) eventRings[this.pendingEvent].push(cpu);
+        this.pendingEvent = "";
+      },
+    };
+    PerfProfiler = profiler;
+    function wrapAudio(fn) {
+      return function () {
+        profiler.begin("audio");
+        try {
+          return fn.apply(this, arguments);
+        } finally {
+          profiler.end("audio");
+        }
+      };
+    }
+    AudioManager.playOne = wrapAudio(AudioManager.playOne);
+    speakMatvey = wrapAudio(speakMatvey);
+    MatveyDialogue.say = wrapAudio(MatveyDialogue.say);
     var baseFrameForTelemetry = frame;
     frame = function (now) {
-      if (telemetry.lastNow) {
-        var frameMs = now - telemetry.lastNow;
-        telemetry.samples.push(frameMs);
-        if (frameMs > 50) telemetry.longFrames++;
-        if (telemetry.samples.length > 240) telemetry.samples.shift();
-      }
-      telemetry.lastNow = now;
+      profiler.startFrame(now);
       baseFrameForTelemetry(now);
+      profiler.endFrame();
     };
     window.MatveyTelemetry = {
       snapshot: function () {
-        var values = telemetry.samples.slice().sort(function (a, b) { return a - b; });
-        var average = values.length
-          ? values.reduce(function (sum, value) { return sum + value; }, 0) / values.length
-          : 0;
-        var p95 = values.length
-          ? values[Math.min(values.length - 1, Math.floor(values.length * 0.95))]
-          : 0;
+        var costs = {}, ranked;
+        names.forEach(function (name) { costs[name] = rings[name].summary(); });
+        ranked = names.map(function (name) { return { name: name, average: costs[name].average, p95: costs[name].p95 }; }).sort(function (a, b) { return b.average - a.average; });
         var info = renderer.info.render;
         return {
-          samples: values.length,
           build: window.MATVEY_BUILD,
-          averageMs: average,
-          p95Ms: p95,
-          longFrames: values.filter(function (value) { return value > 50; }).length,
+          frame: rings.frame.summary(),
+          cpu: rings.cpu.summary(),
+          top: ranked.slice(0, 3),
+          costs: costs,
+          events: { crumb: eventRings.crumb.summary(), human: eventRings.human.summary(), door: eventRings.door.summary() },
           quality: settings.quality,
           dpr: renderer.getPixelRatio(),
           shadows: renderer.shadowMap.enabled,
@@ -4655,16 +4766,15 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     telemetryPanel.setAttribute("aria-hidden", "true");
     document.body.appendChild(telemetryPanel);
     setInterval(function () {
-      var snapshot = window.MatveyTelemetry.snapshot();
+      var snapshot = window.MatveyTelemetry.snapshot(), top = snapshot.top, events = snapshot.events;
       telemetryPanel.textContent =
-        "BUILD " + snapshot.build + "\n" +
-        "TELEMETRY\n" +
-        "avg " + snapshot.averageMs.toFixed(1) + "  p95 " + snapshot.p95Ms.toFixed(1) + " ms\n" +
-        "long " + snapshot.longFrames + " / " + snapshot.samples + "\n" +
-        "quality " + snapshot.quality + "  DPR " + snapshot.dpr.toFixed(2) + "\n" +
-        "shadow " + (snapshot.shadows ? snapshot.shadowMap : "off") + "\n" +
-        "draw " + snapshot.drawCalls + "  tri " + snapshot.triangles + "\n" +
-        "geo " + snapshot.geometries + "  tex " + snapshot.textures;
+        "BUILD " + snapshot.build + "\nTELEMETRY 240f\n" +
+        "frame " + snapshot.frame.average.toFixed(1) + " / p95 " + snapshot.frame.p95.toFixed(1) + " / max " + snapshot.frame.max.toFixed(1) + " ms\n" +
+        "long " + snapshot.frame.long + " / " + snapshot.frame.samples + "  cpu " + snapshot.cpu.average.toFixed(1) + " ms\n" +
+        "top " + top.map(function (x) { return x.name + " " + x.average.toFixed(1); }).join(" | ") + "\n" +
+        "event c/h/d p95|max " + events.crumb.p95.toFixed(1) + "/" + events.crumb.max.toFixed(1) + " " + events.human.p95.toFixed(1) + "/" + events.human.max.toFixed(1) + " " + events.door.p95.toFixed(1) + "/" + events.door.max.toFixed(1) + " ms\n" +
+        "quality " + snapshot.quality + " DPR " + snapshot.dpr.toFixed(2) + " shadow " + (snapshot.shadows ? snapshot.shadowMap : "off") + "\n" +
+        "draw " + snapshot.drawCalls + " tri " + snapshot.triangles + " geo " + snapshot.geometries + " tex " + snapshot.textures;
     }, 750);
   })();
 
