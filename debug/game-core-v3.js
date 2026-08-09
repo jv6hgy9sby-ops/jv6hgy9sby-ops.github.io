@@ -212,6 +212,13 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     sleep: "assets/audio/voice/voice-sleep.mp3",
     finale: "assets/audio/voice/voice-finale.mp3",
   };
+  var AVAILABLE_AUDIO_PATHS = {
+    "assets/audio/sfx/collect.mp3": true,
+    "assets/audio/sfx/snort.mp3": true,
+    "assets/audio/sfx/steps-walk.mp3": true,
+    "assets/audio/sfx/steps-run.mp3": true,
+    "assets/audio/voice/voice-start.mp3": true,
+  };
 
   var AudioManager = {
     unlocked: false,
@@ -246,6 +253,10 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       var self = this;
       if (this.availability[path] !== undefined)
         return Promise.resolve(this.availability[path]);
+      if (!AVAILABLE_AUDIO_PATHS[path]) {
+        this.availability[path] = false;
+        return Promise.resolve(false);
+      }
       return fetch(path, { method: "HEAD", cache: "force-cache" })
         .then(function (r) {
           self.availability[path] = r.ok;
@@ -4163,14 +4174,9 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     }
   }
   function applyRendererSize() {
-    var dpr = Math.min(devicePixelRatio || 1, 1.85),
-      scale =
-        settings.quality === "low"
-          ? 0.62
-          : settings.quality === "medium"
-            ? 0.8
-            : 0.95;
-    renderer.setPixelRatio(dpr * scale);
+    var cap = settings.quality === "low" ? 1 : settings.quality === "medium" ? 1.35 : 1.65,
+      dpr = Math.min(devicePixelRatio || 1, IS_TOUCH ? cap : 1.85);
+    renderer.setPixelRatio(dpr);
     renderer.setSize(innerWidth, innerHeight, false);
   }
   function applyQuality() {
@@ -4179,7 +4185,8 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       low = settings.quality === "low";
     renderer.shadowMap.enabled = !low;
     dirLight.castShadow = !low;
-    dirLight.shadow.mapSize.set(high ? 2048 : 1024, high ? 2048 : 1024);
+    var shadowSize = high && !IS_TOUCH ? 2048 : 1024;
+    dirLight.shadow.mapSize.set(shadowSize, shadowSize);
     if (dirLight.shadow.map) {
       dirLight.shadow.map.dispose();
       dirLight.shadow.map = null;
@@ -4434,7 +4441,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   (function installInputDiagnostics() {
     var debugParams = new URLSearchParams(location.search);
     if (debugParams.get("debugInput") !== "1" && debugParams.get("debugPerf") !== "1") return;
-    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC4";
+    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC5";
     var debug = {
       build: window.MATVEY_DEBUG_BUILD_ID,
       frames: 0, updates: 0, inputs: 0, collisions: 0,
