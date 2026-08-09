@@ -208,6 +208,8 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     smell3: "assets/audio/voice/voice-smell-3.mp3",
     bedWatched: "assets/audio/voice/voice-bed-watched.mp3",
     bedFree: "assets/audio/voice/voice-bed-free.mp3",
+    /* Separate line identity; reuse the existing recording until a dedicated file exists. */
+    bedWindow: "assets/audio/voice/voice-bed-free.mp3",
     dig: "assets/audio/voice/voice-dig.mp3",
     sleep: "assets/audio/voice/voice-sleep.mp3",
     finale: "assets/audio/voice/voice-finale.mp3",
@@ -2793,16 +2795,26 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   var keys = {},
     actionQueued = false,
     actionHeld = false,
-    touchRun = false;
+    touchRun = false,
+    actionPointerId = null,
+    runPointerId = null;
   var joystick = { active: false, id: null, cx: 0, cy: 0, x: 0, y: 0 },
     cameraTouch = { id: null, x: 0, y: 0 },
     mouse = { down: false, x: 0 };
+  var inputDebug = {
+    enabled: new URLSearchParams(location.search).get("debugInput") === "1",
+    frame: 0,
+    inputCalls: 0,
+    input: { x: 0, z: 0, mag: 0 },
+  };
   var knob = $("joystick-knob");
   function resetInput() {
     keys = {};
     actionQueued = false;
     actionHeld = false;
     touchRun = false;
+    actionPointerId = null;
+    runPointerId = null;
     joystick.active = false;
     joystick.id = null;
     joystick.x = 0;
@@ -2862,73 +2874,51 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   renderer.domElement.addEventListener("contextmenu", function (e) {
     e.preventDefault();
   });
-  if (IS_TOUCH) {
-    renderer.domElement.addEventListener(
-      "touchstart",
-      function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var t = e.changedTouches[i];
-          if (cameraTouch.id === null) {
-            cameraTouch.id = t.identifier;
-            cameraTouch.x = t.clientX;
-            cameraTouch.y = t.clientY;
-          }
-        }
-      },
-      { passive: false },
-    );
-    renderer.domElement.addEventListener(
-      "touchmove",
-      function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var t = e.changedTouches[i];
-          if (t.identifier === cameraTouch.id) {
-            var dx = t.clientX - cameraTouch.x;
-            cameraTouch.x = t.clientX;
-            cameraTouch.y = t.clientY;
-            cam.yaw -= dx * 0.0043 * settings.sens;
-          }
-        }
-      },
-      { passive: false },
-    );
+  if (IS_TOUCH && "PointerEvent" in window) {
+    renderer.domElement.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" || cameraTouch.id !== null) return;
+      e.preventDefault();
+      cameraTouch.id = e.pointerId;
+      cameraTouch.x = e.clientX;
+      cameraTouch.y = e.clientY;
+      try {
+        renderer.domElement.setPointerCapture(e.pointerId);
+      } catch (error) {}
+    });
+    renderer.domElement.addEventListener("pointermove", function (e) {
+      if (e.pointerId !== cameraTouch.id) return;
+      e.preventDefault();
+      var dx = e.clientX - cameraTouch.x;
+      cameraTouch.x = e.clientX;
+      cameraTouch.y = e.clientY;
+      cam.yaw -= dx * 0.0043 * settings.sens;
+    });
     var endCamera = function (e) {
-      for (var i = 0; i < e.changedTouches.length; i++)
-        if (e.changedTouches[i].identifier === cameraTouch.id)
-          cameraTouch.id = null;
+      if (e.pointerId === cameraTouch.id) cameraTouch.id = null;
     };
-    renderer.domElement.addEventListener("touchend", endCamera);
-    renderer.domElement.addEventListener("touchcancel", endCamera);
+    renderer.domElement.addEventListener("pointerup", endCamera);
+    renderer.domElement.addEventListener("pointercancel", endCamera);
+    renderer.domElement.addEventListener("lostpointercapture", endCamera);
     var zone = $("joystick-zone"),
       base = $("joystick-base");
-    zone.addEventListener(
-      "touchstart",
-      function (e) {
-        e.preventDefault();
-        if (joystick.active) return;
-        var t = e.changedTouches[0],
-          r = base.getBoundingClientRect();
-        joystick.active = true;
-        joystick.id = t.identifier;
-        joystick.cx = r.left + r.width / 2;
-        joystick.cy = r.top + r.height / 2;
-        moveJoy(t.clientX, t.clientY);
-      },
-      { passive: false },
-    );
-    zone.addEventListener(
-      "touchmove",
-      function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var t = e.changedTouches[i];
-          if (t.identifier === joystick.id) moveJoy(t.clientX, t.clientY);
-        }
-      },
-      { passive: false },
-    );
+    zone.addEventListener("pointerdown", function (e) {
+      if (joystick.active) return;
+      e.preventDefault();
+      var r = base.getBoundingClientRect();
+      joystick.id = e.pointerId;
+      joystick.active = true;
+      joystick.cx = r.left + r.width / 2;
+      joystick.cy = r.top + r.height / 2;
+      try {
+        zone.setPointerCapture(e.pointerId);
+      } catch (error) {}
+      moveJoy(e.clientX, e.clientY);
+    });
+    zone.addEventListener("pointermove", function (e) {
+      if (e.pointerId !== joystick.id) return;
+      e.preventDefault();
+      moveJoy(e.clientX, e.clientY);
+    });
     function moveJoy(x, y) {
       var dx = x - joystick.cx,
         dy = y - joystick.cy,
@@ -2941,58 +2931,54 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         "translate(" + (dx / l) * c + "px," + (dy / l) * c + "px)";
     }
     var endJoy = function (e) {
-      for (var i = 0; i < e.changedTouches.length; i++)
-        if (e.changedTouches[i].identifier === joystick.id) {
-          joystick.active = false;
-          joystick.id = null;
-          joystick.x = joystick.y = 0;
-          knob.style.transform = "translate(0,0)";
-        }
+      if (e.pointerId !== joystick.id) return;
+      joystick.active = false;
+      joystick.id = null;
+      joystick.x = joystick.y = 0;
+      knob.style.transform = "translate(0,0)";
     };
-    zone.addEventListener("touchend", endJoy);
-    zone.addEventListener("touchcancel", endJoy);
-    $("btn-action").addEventListener(
-      "touchstart",
-      function (e) {
-        e.preventDefault();
-        actionQueued = true;
-        actionHeld = true;
-      },
-      { passive: false },
-    );
-    $("btn-action").addEventListener(
-      "touchend",
-      function (e) {
-        e.preventDefault();
-        actionHeld = false;
-      },
-      { passive: false },
-    );
-    $("btn-action").addEventListener("touchcancel", function () {
+    zone.addEventListener("pointerup", endJoy);
+    zone.addEventListener("pointercancel", endJoy);
+    zone.addEventListener("lostpointercapture", endJoy);
+    var actionButton = $("btn-action");
+    actionButton.addEventListener("pointerdown", function (e) {
+      if (actionPointerId !== null) return;
+      e.preventDefault();
+      actionPointerId = e.pointerId;
+      actionQueued = true;
+      actionHeld = true;
+      try {
+        actionButton.setPointerCapture(e.pointerId);
+      } catch (error) {}
+    });
+    var endAction = function (e) {
+      if (e.pointerId !== actionPointerId) return;
+      actionPointerId = null;
       actionHeld = false;
+    };
+    actionButton.addEventListener("pointerup", endAction);
+    actionButton.addEventListener("pointercancel", endAction);
+    actionButton.addEventListener("lostpointercapture", endAction);
+    var runButton = $("btn-run");
+    runButton.addEventListener("pointerdown", function (e) {
+      if (runPointerId !== null) return;
+      e.preventDefault();
+      runPointerId = e.pointerId;
+      touchRun = true;
+      runButton.classList.add("active");
+      try {
+        runButton.setPointerCapture(e.pointerId);
+      } catch (error) {}
     });
-    $("btn-run").addEventListener(
-      "touchstart",
-      function (e) {
-        e.preventDefault();
-        touchRun = true;
-        this.classList.add("active");
-      },
-      { passive: false },
-    );
-    $("btn-run").addEventListener(
-      "touchend",
-      function (e) {
-        e.preventDefault();
-        touchRun = false;
-        this.classList.remove("active");
-      },
-      { passive: false },
-    );
-    $("btn-run").addEventListener("touchcancel", function () {
+    var endRun = function (e) {
+      if (e.pointerId !== runPointerId) return;
+      runPointerId = null;
       touchRun = false;
-      this.classList.remove("active");
-    });
+      runButton.classList.remove("active");
+    };
+    runButton.addEventListener("pointerup", endRun);
+    runButton.addEventListener("pointercancel", endRun);
+    runButton.addEventListener("lostpointercapture", endRun);
   }
   function inputVector() {
     var x = 0,
@@ -3010,7 +2996,10 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       x /= l;
       z /= l;
     }
-    return { x: x, z: z, mag: Math.min(1, l) };
+    var result = { x: x, z: z, mag: Math.min(1, l) };
+    inputDebug.inputCalls++;
+    inputDebug.input = result;
+    return result;
   }
 
   /* Game */
@@ -3520,6 +3509,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       );
   }
   function updatePlaying(dt) {
+    inputDebug.frame++;
     Game.time += dt;
     Game.bumpCooldown -= dt;
     var inSequence = updateSequence(dt);
@@ -3733,7 +3723,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         human.lookT = Game.looking ? rand(3, 4.4) : rand(3.2, 5.8);
         human.yawTarget = Game.looking ? LOOK_YAW : AWAY_YAW;
         setWatch(Game.looking);
-        if (!Game.looking) speakMatvey("bedFree", "Оперативное окно открыто.");
+        if (!Game.looking) speakMatvey("bedWindow", "Оперативное окно открыто.");
       }
       humanRoot.rotation.y = angleLerp(
         humanRoot.rotation.y,
@@ -4362,6 +4352,117 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     }, 800);
   }
 
+  var inputDebugPanel = null;
+  function getInputDebugState() {
+    return {
+      mode: Game.mode,
+      paused: Game.paused,
+      inputLocked: Game.inputLocked,
+      pausedByOrientation: pausedByOrientation,
+      sequenceActive: Boolean(sequence),
+      sleeping: Game.sleeping,
+      pointerId: joystick.id,
+      joystick: {
+        active: joystick.active,
+        x: joystick.x,
+        y: joystick.y,
+      },
+      inputVector: {
+        x: inputDebug.input.x,
+        z: inputDebug.input.z,
+        mag: inputDebug.input.mag,
+      },
+      velocity: { x: pug.vel.x, z: pug.vel.z },
+      pug: { x: pug.pos.x, z: pug.pos.z },
+      pugRoot: { x: pugRoot.position.x, z: pugRoot.position.z },
+      frame: inputDebug.frame,
+      inputCalls: inputDebug.inputCalls,
+      runPointerId: runPointerId,
+      actionPointerId: actionPointerId,
+    };
+  }
+  function compactNumber(value) {
+    return Math.round(value * 1000) / 1000;
+  }
+  window.MatveyDebug = {
+    getState: getInputDebugState,
+    testMovement: function () {
+      var before = { x: pug.pos.x, z: pug.pos.z };
+      var blocked =
+        Game.mode !== "playing" ||
+        Game.paused ||
+        pausedByOrientation ||
+        Boolean(sequence) ||
+        Game.inputLocked ||
+        Game.sleeping;
+      if (blocked || joystick.active)
+        return Promise.resolve({
+          pass: false,
+          reason: blocked ? "movement-gated" : "joystick-busy",
+          before: before,
+          after: { x: pug.pos.x, z: pug.pos.z },
+          distance: 0,
+          state: getInputDebugState(),
+        });
+      joystick.id = -1;
+      joystick.active = true;
+      joystick.x = 0;
+      joystick.y = -1;
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          if (joystick.id === -1) {
+            joystick.active = false;
+            joystick.id = null;
+            joystick.x = 0;
+            joystick.y = 0;
+            knob.style.transform = "translate(0,0)";
+          }
+          var after = { x: pug.pos.x, z: pug.pos.z };
+          var dx = after.x - before.x,
+            dz = after.z - before.z,
+            distance = Math.sqrt(dx * dx + dz * dz),
+            threshold = 0.15;
+          resolve({
+            pass: distance > threshold,
+            before: before,
+            after: after,
+            distance: distance,
+            threshold: threshold,
+            state: getInputDebugState(),
+          });
+        }, 650);
+      });
+    },
+  };
+  if (inputDebug.enabled) {
+    inputDebugPanel = document.createElement("pre");
+    inputDebugPanel.id = "input-debug-panel";
+    inputDebugPanel.style.cssText =
+      "position:fixed;z-index:190;left:6px;top:6px;margin:0;padding:7px;" +
+      "max-width:48vw;max-height:92vh;overflow:auto;pointer-events:none;" +
+      "border:1px solid rgba(255,190,120,.35);border-radius:9px;" +
+      "background:rgba(10,8,7,.9);color:#dfffd9;font:10px/1.25 monospace;";
+    document.body.appendChild(inputDebugPanel);
+  }
+  function updateInputDebugPanel() {
+    if (!inputDebugPanel) return;
+    var s = getInputDebugState();
+    inputDebugPanel.textContent =
+      "mode " + s.mode +
+      "\npaused " + s.paused +
+      "\ninputLocked " + s.inputLocked +
+      "\norientationPause " + s.pausedByOrientation +
+      "\nsequence " + s.sequenceActive +
+      "\nsleeping " + s.sleeping +
+      "\npointer " + s.pointerId +
+      "\njoystick " + s.joystick.active + " " + compactNumber(s.joystick.x) + " " + compactNumber(s.joystick.y) +
+      "\ninput " + compactNumber(s.inputVector.x) + " " + compactNumber(s.inputVector.z) + " " + compactNumber(s.inputVector.mag) +
+      "\nvelocity " + compactNumber(s.velocity.x) + " " + compactNumber(s.velocity.z) +
+      "\npug.pos " + compactNumber(s.pug.x) + " " + compactNumber(s.pug.z) +
+      "\npugRoot " + compactNumber(s.pugRoot.x) + " " + compactNumber(s.pugRoot.z) +
+      "\nframe " + s.frame + " / input " + s.inputCalls;
+  }
+
   /* Main loop */
   function frame(now) {
     requestAnimationFrame(frame);
@@ -4390,6 +4491,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         updateParticles(dt);
       }
     }
+    updateInputDebugPanel();
     renderer.render(scene, camera);
   }
 
