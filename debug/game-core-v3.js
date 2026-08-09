@@ -197,20 +197,20 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     ui: "assets/audio/sfx/ui-click.mp3",
   };
   var VOICE_PATHS = {
-    start: "assets/audio/voice/voice-start.mp3",
-    firstCrumb: "assets/audio/voice/voice-first-crumb.mp3",
-    vacuum: "assets/audio/voice/voice-vacuum.mp3",
-    beg: "assets/audio/voice/voice-beg.mp3",
-    leash: "assets/audio/voice/voice-leash.mp3",
-    door: "assets/audio/voice/voice-door.mp3",
-    smell1: "assets/audio/voice/voice-smell-1.mp3",
-    smell2: "assets/audio/voice/voice-smell-2.mp3",
-    smell3: "assets/audio/voice/voice-smell-3.mp3",
-    bedWatched: "assets/audio/voice/voice-bed-watched.mp3",
-    bedFree: "assets/audio/voice/voice-bed-free.mp3",
-    dig: "assets/audio/voice/voice-dig.mp3",
-    sleep: "assets/audio/voice/voice-sleep.mp3",
-    finale: "assets/audio/voice/voice-finale.mp3",
+    start: "assets/audio/voice/voice-start.wav",
+    firstCrumb: "assets/audio/voice/voice-first-crumb.wav",
+    vacuum: "assets/audio/voice/voice-vacuum.wav",
+    beg: "assets/audio/voice/voice-beg.wav",
+    leash: "assets/audio/voice/voice-leash.wav",
+    door: "assets/audio/voice/voice-door.wav",
+    smell1: "assets/audio/voice/voice-smell-1.wav",
+    smell2: "assets/audio/voice/voice-smell-2.wav",
+    smell3: "assets/audio/voice/voice-smell-3.wav",
+    bedWatched: "assets/audio/voice/voice-bed-watched.wav",
+    bedFree: "assets/audio/voice/voice-bed-free.wav",
+    dig: "assets/audio/voice/voice-dig.wav",
+    sleep: "assets/audio/voice/voice-sleep.wav",
+    finale: "assets/audio/voice/voice-finale.wav",
   };
   var AVAILABLE_AUDIO_PATHS = {
     "assets/audio/sfx/collect.mp3": true,
@@ -253,7 +253,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       var self = this;
       if (this.availability[path] !== undefined)
         return Promise.resolve(this.availability[path]);
-      if (!AVAILABLE_AUDIO_PATHS[path]) {
+      if (!AVAILABLE_AUDIO_PATHS[path] && !/^assets\/audio\/voice\/voice-[\w-]+\.wav$/.test(path)) {
         this.availability[path] = false;
         return Promise.resolve(false);
       }
@@ -4441,7 +4441,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   (function installInputDiagnostics() {
     var debugParams = new URLSearchParams(location.search);
     if (debugParams.get("debugInput") !== "1" && debugParams.get("debugPerf") !== "1") return;
-    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC5";
+    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC6";
     var debug = {
       build: window.MATVEY_DEBUG_BUILD_ID,
       frames: 0, updates: 0, inputs: 0, collisions: 0,
