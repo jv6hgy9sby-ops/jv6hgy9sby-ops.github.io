@@ -3832,7 +3832,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     stopVoice();
     AudioManager.stopAll();
     sequence = null;
-    resetInput();
+    resetInput("reset-game");
     Object.assign(Game, {
       mode: "menu",
       paused: false,
@@ -3940,7 +3940,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   }
   function pauseGame() {
     if (Game.mode !== "playing" || Game.paused) return;
-    resetInput();
+    resetInput("pause");
     Game.paused = true;
     AudioManager.pauseAll();
     stopVoice();
@@ -4102,7 +4102,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     if (portrait) {
       if (Game.mode === "playing" && !Game.paused && !pausedByOrientation) {
         pausedByOrientation = true;
-        resetInput();
+        resetInput("orientation");
         AudioManager.pauseAll();
         stopVoice();
       }
@@ -4392,6 +4392,52 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     }
     renderer.render(scene, camera);
   }
+
+  /* debugInput=1: observe the existing input → movement pipeline without changing it. */
+  (function installInputDiagnostics() {
+    if (new URLSearchParams(location.search).get("debugInput") !== "1") return;
+    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC1";
+    var debug = {
+      build: window.MATVEY_DEBUG_BUILD_ID,
+      frames: 0, updates: 0, inputs: 0, collisions: 0,
+      lastDt: 0, lastInput: { x: 0, z: 0, mag: 0 },
+      lastReset: "boot", lastResetTime: 0, lastWriter: "none", result: null, testing: false,
+      touch: { touchstart: 0, touchmove: 0, touchend: 0, touchcancel: 0, last: null }
+    };
+    var baseInputVector = inputVector, baseUpdatePlaying = updatePlaying, baseCollide = collide, baseResetInput = resetInput;
+    inputVector = function () { var value = baseInputVector(); debug.inputs++; debug.lastInput = value; return value; };
+    collide = function (pos, radius) { var beforeX = pos.x, beforeZ = pos.z; baseCollide(pos, radius); if (beforeX !== pos.x || beforeZ !== pos.z) { debug.collisions++; debug.lastCollision = colliders.findIndex(function (c) { return pos.x >= c.minX - radius && pos.x <= c.maxX + radius && pos.z >= c.minZ - radius && pos.z <= c.maxZ + radius; }); } };
+    resetInput = function (reason) { debug.lastReset = reason || "runtime"; debug.lastResetTime = performance.now(); return baseResetInput(); };
+    updatePlaying = function (dt) { debug.updates++; debug.lastDt = dt; baseUpdatePlaying(dt); debug.lastWriter = "updatePlaying:pugRoot.position.set"; };
+    var baseFrame = frame;
+    frame = function (now) { debug.frames++; baseFrame(now); };
+    function point() { return { x: pug.pos.x, z: pug.pos.z, vx: pug.vel.x, vz: pug.vel.z, rootX: pugRoot.position.x, rootZ: pugRoot.position.z }; }
+    function gates() {
+      if (Game.mode !== "playing") return "mode-not-playing";
+      if (Game.paused) return "paused";
+      if (Game.inputLocked) return "input-locked";
+      if (pausedByOrientation) return "orientation-paused";
+      if (sequence) return "sequence-active";
+      if (Game.sleeping) return "sleeping";
+      if (joystick.active) return "joystick-busy";
+      return null;
+    }
+    function spawnCollision() { var radius = .34, spawn = { x: .6, z: -1.4 }; return { spawn: spawn, radius: radius, blocked: blocked(spawn.x, spawn.z, radius), intersections: colliders.map(function (c, index) { return { index: index, minX: c.minX, maxX: c.maxX, minZ: c.minZ, maxZ: c.maxZ }; }).filter(function (c) { return spawn.x > c.minX - radius && spawn.x < c.maxX + radius && spawn.z > c.minZ - radius && spawn.z < c.maxZ + radius; }) }; }
+    ["touchstart", "touchmove", "touchend", "touchcancel"].forEach(function (type) { document.addEventListener(type, function (event) { var touch = event.changedTouches && event.changedTouches[0]; debug.touch[type]++; debug.touch.last = { type: type, targetId: event.target && event.target.id || "(none)", currentTargetId: event.currentTarget && event.currentTarget.id || "document", identifier: touch ? touch.identifier : null, clientX: touch ? touch.clientX : null, clientY: touch ? touch.clientY : null, touches: event.touches ? event.touches.length : 0, changedTouches: event.changedTouches ? event.changedTouches.length : 0, time: performance.now() }; }, true); });
+    function getState() { return { build: debug.build, href: location.href, isTouch: IS_TOUCH, maxTouchPoints: navigator.maxTouchPoints, pointerEvents: "PointerEvent" in window, mode: Game.mode, paused: Game.paused, inputLocked: Game.inputLocked, orientationPause: pausedByOrientation, sequence: Boolean(sequence), sleeping: Game.sleeping, joystick: { active: joystick.active, id: joystick.id, x: joystick.x, y: joystick.y }, input: debug.lastInput, velocity: { x: pug.vel.x, z: pug.vel.z }, pug: { x: pug.pos.x, z: pug.pos.z }, root: { x: pugRoot.position.x, z: pugRoot.position.z }, frames: debug.frames, updates: debug.updates, inputs: debug.inputs, dt: debug.lastDt, collisions: debug.collisions, lastReset: debug.lastReset, lastResetTime: debug.lastResetTime, touch: debug.touch, lastWriter: debug.lastWriter, result: debug.result }; }
+    function testMovement() {
+      var reason = gates(); if (reason) { debug.result = { pass: false, reason: reason }; return Promise.resolve(debug.result); }
+      debug.testing = true; var before = point(), marks = { frames: debug.frames, updates: debug.updates, inputs: debug.inputs, collisions: debug.collisions }, previous = { active: joystick.active, x: joystick.x, y: joystick.y, id: joystick.id };
+      joystick.active = true; joystick.x = 0; joystick.y = -1;
+      return new Promise(function (resolve) { setTimeout(function () { joystick.active = previous.active; joystick.x = previous.x; joystick.y = previous.y; joystick.id = previous.id; var after = point(), dx = after.x - before.x, dz = after.z - before.z, distance = Math.sqrt(dx * dx + dz * dz), rootDelta = Math.sqrt(Math.pow(after.rootX - after.x, 2) + Math.pow(after.rootZ - after.z, 2)); debug.result = { pass: distance > .15 && rootDelta < .03, reason: distance > .15 ? (rootDelta < .03 ? "ok" : "root-not-following") : "position-not-changed", before: before, after: after, distance: distance, frames: debug.frames - marks.frames, updates: debug.updates - marks.updates, inputs: debug.inputs - marks.inputs, collisions: debug.collisions - marks.collisions }; debug.testing = false; resolve(debug.result); }, 650); });
+    }
+    window.MatveyDebug = { getState: getState, testMovement: testMovement, getSpawnCollision: spawnCollision };
+    var panel = document.createElement("div"), button = document.createElement("button"), text = document.createElement("pre");
+    panel.id = "matvey-input-debug"; panel.style.cssText = "position:fixed;top:8px;right:8px;z-index:9999;max-width:310px;padding:8px;background:rgba(0,0,0,.78);color:#dff;font:11px/1.28 monospace;border-radius:8px;pointer-events:none";
+    button.textContent = "TEST MOVEMENT"; button.style.cssText = "pointer-events:auto;width:100%;padding:8px;margin-bottom:6px"; button.onclick = function () { testMovement(); };
+    panel.appendChild(button); panel.appendChild(text); document.body.appendChild(panel);
+    setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\nmode " + s.mode + " paused " + s.paused + " locked " + s.inputLocked + " orient " + s.orientationPause + " seq " + s.sequence + " sleep " + s.sleeping + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + " m" + s.input.mag.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " pug " + s.pug.x.toFixed(2) + "," + s.pug.z.toFixed(2) + " root " + s.root.x.toFixed(2) + "," + s.root.z.toFixed(2) + "\ntouch s/m/e/c " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " last " + e.type + " " + e.targetId + " #" + e.identifier + " " + e.clientX + "," + e.clientY + " t" + e.touches + " c" + e.changedTouches : "") + "\nframe " + s.frames + " update " + s.updates + " inputCalls " + s.inputs + " dt " + s.dt.toFixed(3) + " coll " + s.collisions + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " writer " + s.lastWriter + (r ? "\nPROGRAMMATIC MOVEMENT " + (r.pass ? "PASS" : "FAIL") + " " + r.reason + (r.distance !== undefined ? " d=" + r.distance.toFixed(3) : "") : ""); }, 250);
+  })();
 
   /* Start */
   tryLoadGlb();
