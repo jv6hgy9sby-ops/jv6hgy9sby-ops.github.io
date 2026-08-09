@@ -486,6 +486,27 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       if (p && p.catch) p.catch(finish);
     });
   }
+  var MatveyDialogue = {
+    lastAt: 0,
+    cooldown: 8500,
+    lines: {
+      start: ["Так. Проверим обстановку.", "Рабочий день начался.", "Селёдочник вышел на смену.", "Начнём с самого важного. С еды."],
+      idle: ["Я думаю.", "Ситуация требует наблюдения.", "Контроль обстановки продолжается.", "Можно было уже принести вкусное."],
+      walk: ["Проверяю территорию.", "Иду по важному делу.", "След ведёт куда-то вкусное."],
+      run: ["Расступитесь.", "Оперативное ускорение.", "Селёдочник спешит."],
+      humanNear: ["Так. Начинаем переговоры.", "Человек обнаружен.", "Есть разговор."],
+      humanWait: ["Я могу ждать. Но осуждаю.", "Переговоры сами себя не проведут.", "Человек, я здесь."],
+      oink: ["Хрю-хрю.", "Хрю-хрю. Работаем.", "Хрю-хрю. Подозрительно."]
+    },
+    say: function (category, options) {
+      options = options || {};
+      var t = nowMs(), lines = this.lines[category];
+      if (!lines || (!options.force && t - this.lastAt < (options.cooldown || this.cooldown))) return false;
+      this.lastAt = t;
+      speakMatvey("dialogue-" + category, lines[Math.floor(Math.random() * lines.length)], { force: Boolean(options.force) });
+      return true;
+    }
+  };
 
   /* UI */
   var screenIds = [
@@ -2753,9 +2774,9 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   }
   function updateCamera(dt) {
     var calm = settings.calm,
-      k = 1 - Math.exp(-dt * (calm ? 2.15 : 5.4)),
-      focusK = 1 - Math.exp(-dt * (calm ? 3.1 : 7.2)),
-      lookK = 1 - Math.exp(-dt * (calm ? 2.4 : 5.1)),
+      k = 1 - Math.exp(-dt * (calm ? 7.5 : 11.5)),
+      focusK = 1 - Math.exp(-dt * (calm ? 9.5 : 15)),
+      lookK = 1 - Math.exp(-dt * (calm ? 7.5 : 12)),
       manualCamera = nowMs() < cam.manualUntil;
     var talkZoom =
       voiceState.speaking && pug.move < 0.18 && !Game.sleeping ? 0.24 : 0;
@@ -2763,7 +2784,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     cam.pitch = lerp(cam.pitch, Game.sleeping ? 0.48 : 0.32, focusK);
     if (Game.mode === "finale" && !calm) cam.yaw += dt * 0.038;
     if (!Game.sleeping && !manualCamera && pug.move > 0.08)
-      cam.yaw = angleLerp(cam.yaw, pug.yaw, 1 - Math.exp(-dt * (calm ? 0.16 : 0.34)));
+      cam.yaw = angleLerp(cam.yaw, pug.yaw, 1 - Math.exp(-dt * (calm ? 0.1 : 0.24)));
     var ahead = Game.sleeping ? 0 : clamp(pug.move * (calm ? 0.12 : 0.24), 0, calm ? 0.12 : 0.24),
       fx = Game.sleeping ? bedCX : pug.pos.x + Math.sin(pug.yaw) * ahead,
       fy = Game.sleeping ? 0.85 : 0.43,
@@ -3127,7 +3148,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     timer(function () {
       Game.inputLocked = false;
       quest(1);
-      speakMatvey("start", "Так. Новый день. Где мои крошки?", { force: true });
+      MatveyDialogue.say("start", { force: true });
     }, 650);
   }
   function activateVacuum() {
@@ -3780,10 +3801,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       Game.ambientTimer -= dt;
       if (Game.ambientTimer <= 0) {
         Game.ambientTimer = rand(20, 34);
-        speakMatvey(
-          "random" + Math.floor(Math.random() * 99),
-          rareLines[Math.floor(Math.random() * rareLines.length)],
-        );
+        MatveyDialogue.say("idle", { cooldown: 20000 });
       }
     }
     if (Game.sleeping) {
@@ -3816,7 +3834,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     if (interact2 && interact2.short === "ПРОСИТЬ" && !Game.humanPrompted) {
       Game.humanPrompted = true;
       hapticImpact("light");
-      speakMatvey("humanNear", "Так. Начинаем переговоры.");
+      MatveyDialogue.say("humanNear", { cooldown: 20000 });
     }
     updateParticles(dt);
     animatePug(dt);
@@ -4416,7 +4434,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
   (function installInputDiagnostics() {
     var debugParams = new URLSearchParams(location.search);
     if (debugParams.get("debugInput") !== "1" && debugParams.get("debugPerf") !== "1") return;
-    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC3";
+    window.MATVEY_DEBUG_BUILD_ID = "CODEX-IOS-RC4";
     var debug = {
       build: window.MATVEY_DEBUG_BUILD_ID,
       frames: 0, updates: 0, inputs: 0, collisions: 0,
