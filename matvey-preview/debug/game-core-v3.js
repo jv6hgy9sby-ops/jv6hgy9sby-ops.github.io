@@ -525,7 +525,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     });
   }
   var MatveyDialogue = {
-    lastAt: 0,
+    lastAt: -Infinity,
     cooldown: 8500,
     lines: {
       start: ["Так. Проверим обстановку.", "Рабочий день начался.", "Селёдочник вышел на смену.", "Начнём с самого важного. С еды."],
