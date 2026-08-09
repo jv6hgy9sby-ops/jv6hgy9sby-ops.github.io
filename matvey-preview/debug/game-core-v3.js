@@ -2529,6 +2529,20 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     H.eyeSprite.position.set(0, 1.72, 0.17);
     H.eyeSprite.visible = false;
     humanRoot.add(H.eyeSprite);
+    H.interactGlow = new THREE.Mesh(
+      new THREE.RingGeometry(0.33, 0.46, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xffb34d,
+        transparent: true,
+        opacity: 0.88,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    H.interactGlow.rotation.x = -Math.PI / 2;
+    H.interactGlow.position.y = 0.025;
+    H.interactGlow.visible = false;
+    humanRoot.add(H.interactGlow);
   })();
   var human = { target: null, lookT: 2, yawTarget: HUMAN_KITCHEN.yaw, bob: 0 };
 
@@ -3161,7 +3175,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     timer(function () {
       Game.inputLocked = false;
       quest(1);
-      MatveyDialogue.say("start", { force: true });
+      speakMatvey("start", "Так. Проверим обстановку.", { force: true });
     }, 650);
   }
   function activateVacuum() {
@@ -3773,6 +3787,19 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       H.legR.rotation.x = lerp(H.legR.rotation.x, 0, dt * 8);
       humanRoot.position.y = lerp(humanRoot.position.y, 0, dt * 8);
     }
+    var humanInteractable =
+      Game.quest === 4 &&
+      !Game.inputLocked &&
+      !Game.sleeping &&
+      Math.sqrt(
+        dist2(
+          pug.pos.x,
+          pug.pos.z,
+          humanRoot.position.x,
+          humanRoot.position.z,
+        ),
+      ) < 1.5;
+    H.interactGlow.visible = humanInteractable;
     if (Game.quest === 7 && !Game.sleeping && !human.target) {
       human.lookT -= dt;
       if (human.lookT <= 0) {
@@ -3943,6 +3970,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     human.yawTarget = HUMAN_KITCHEN.yaw;
     human.bob = 0;
     H.eyeSprite.visible = false;
+    H.interactGlow.visible = false;
     smellPoints.forEach(function (s) {
       s.done = false;
       s.progress = 0;
@@ -4334,6 +4362,11 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       quest(4);
       pug.pos.set(humanRoot.position.x + 1, 0, humanRoot.position.z + 0.4);
     }
+    if (action === "human-action") {
+      quest(4);
+      pug.pos.set(humanRoot.position.x + 1, 0, humanRoot.position.z + 0.4);
+      actionQueued = true;
+    }
     if (action === "leash") {
       quest(5);
       Game.leashPicked = true;
@@ -4347,6 +4380,14 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       removeCollider(frontDoorCollider);
       quest(6);
       pug.pos.set(5.8, 0, -8.3);
+    }
+    if (action === "door-action") {
+      quest(5);
+      Game.leashPicked = true;
+      Game.hasLeash = true;
+      Game.doorSequence = false;
+      pug.pos.set(5.8, 0, -5.2);
+      actionQueued = true;
     }
     if (action === "smells") {
       smellPoints.forEach(function (s) {
@@ -4386,7 +4427,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     panel.id = "debug-panel";
     panel.innerHTML =
       '<b>QA</b><div id="debug-info"></div>' +
-      ["crumbs", "human", "leash", "yard", "smells", "bedroom", "bed", "finale"]
+      ["crumbs", "human", "human-action", "leash", "door-action", "yard", "smells", "bedroom", "bed", "finale"]
         .map(function (a) {
           return '<button data-debug="' + a + '">' + a + "</button>";
         })
@@ -4450,6 +4491,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       lastDt: 0, lastInput: { x: 0, z: 0, mag: 0 },
       lastReset: "boot", lastResetTime: 0, lastWriter: "none", result: null, testing: false,
       touch: { touchstart: 0, touchmove: 0, touchend: 0, touchcancel: 0, last: null },
+      perf: { lastNow: 0, samples: [], longFrames: 0 },
       cameraFrozen: false, animateCalls: 0
     };
     var baseInputVector = inputVector, baseUpdatePlaying = updatePlaying, baseCollide = collide, baseResetInput = resetInput, baseUpdateCamera = updateCamera, baseAnimatePug = animatePug;
@@ -4460,7 +4502,17 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     animatePug = function (dt) { debug.animateCalls++; return baseAnimatePug(dt); };
     updatePlaying = function (dt) { debug.updates++; debug.lastDt = dt; baseUpdatePlaying(dt); debug.lastWriter = "updatePlaying:pugRoot.position.set"; };
     var baseFrame = frame;
-    frame = function (now) { debug.frames++; baseFrame(now); };
+    frame = function (now) {
+      if (debug.perf.lastNow) {
+        var frameMs = now - debug.perf.lastNow;
+        debug.perf.samples.push(frameMs);
+        if (frameMs > 50) debug.perf.longFrames++;
+        if (debug.perf.samples.length > 300) debug.perf.samples.shift();
+      }
+      debug.perf.lastNow = now;
+      debug.frames++;
+      baseFrame(now);
+    };
     function point() { return { x: pug.pos.x, z: pug.pos.z, vx: pug.vel.x, vz: pug.vel.z, rootX: pugRoot.position.x, rootZ: pugRoot.position.z }; }
     function gates() {
       if (Game.mode !== "playing") return "mode-not-playing";
@@ -4478,7 +4530,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     marker.name = "PUG ROOT MARKER"; marker.position.set(0, 1.3, 0); marker.renderOrder = 999; pugRoot.add(marker);
     function world(object) { var out = new THREE.Vector3(); if (object) object.getWorldPosition(out); return { x: out.x, y: out.y, z: out.z }; }
     function screen(worldPoint) { var out = new THREE.Vector3(worldPoint.x, worldPoint.y, worldPoint.z).project(camera); return { x: out.x, y: out.y, visible: out.z >= -1 && out.z <= 1 }; }
-    function getState() { scene.updateMatrixWorld(true); var rootWorld = world(pugRoot), visual = glb.active ? glb.model : proceduralPug, visualWorld = world(visual), cameraWorld = world(camera), anchorWorld = world(humanRoot), info = renderer.info.render; return { build: debug.build, href: location.href, isTouch: IS_TOUCH, maxTouchPoints: navigator.maxTouchPoints, pointerEvents: "PointerEvent" in window, mode: Game.mode, paused: Game.paused, inputLocked: Game.inputLocked, orientationPause: pausedByOrientation, sequence: Boolean(sequence), sleeping: Game.sleeping, joystick: { active: joystick.active, id: joystick.id, x: joystick.x, y: joystick.y }, input: debug.lastInput, velocity: { x: pug.vel.x, z: pug.vel.z }, pug: { x: pug.pos.x, z: pug.pos.z, state: pug.state, move: pug.move, phase: pug.phase }, root: { local: { x: pugRoot.position.x, y: pugRoot.position.y, z: pugRoot.position.z }, world: rootWorld, matrixAutoUpdate: pugRoot.matrixAutoUpdate, matrixWorldNeedsUpdate: pugRoot.matrixWorldNeedsUpdate, children: pugRoot.children.length }, visual: { player: glb.active ? "GLB" : "procedural", glbActive: glb.active, proceduralVisible: proceduralPug.visible, glbVisible: glb.model ? glb.model.visible : null, world: visualWorld, proceduralLocal: { x: proceduralPug.position.x, y: proceduralPug.position.y, z: proceduralPug.position.z }, proceduralRotation: { x: proceduralPug.rotation.x, y: proceduralPug.rotation.y, z: proceduralPug.rotation.z }, proceduralScale: { x: proceduralPug.scale.x, y: proceduralPug.scale.y, z: proceduralPug.scale.z }, bodyWorld: world(P.body), hierarchy: { bodyParent: P.body.parent === proceduralPug, proceduralParent: proceduralPug.parent === pugRoot, rootParent: pugRoot.parent === scene, sceneHasRoot: scene.children.indexOf(pugRoot) >= 0, sceneHasProcedural: scene.children.indexOf(proceduralPug) >= 0 } }, marker: { world: world(marker), visible: marker.visible }, camera: { frozen: debug.cameraFrozen, world: cameraWorld, local: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: cam.focus.x, y: cam.focus.y, z: cam.focus.z }, distanceToPug: Math.sqrt(Math.pow(cameraWorld.x-rootWorld.x,2)+Math.pow(cameraWorld.y-rootWorld.y,2)+Math.pow(cameraWorld.z-rootWorld.z,2)) }, screen: { pug: screen(rootWorld), marker: screen(world(marker)), anchor: screen(anchorWorld) }, animation: { animatePugCalls: debug.animateCalls, glbAnimation: glb.current ? glb.current._clip.name : null }, performance: { calls: info.calls, triangles: info.triangles, points: info.points, lines: info.lines, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }, frames: debug.frames, updates: debug.updates, inputs: debug.inputs, dt: debug.lastDt, collisions: debug.collisions, lastReset: debug.lastReset, lastResetTime: debug.lastResetTime, touch: debug.touch, lastWriter: debug.lastWriter, result: debug.result }; }
+    function getState() { scene.updateMatrixWorld(true); var rootWorld = world(pugRoot), visual = glb.active ? glb.model : proceduralPug, visualWorld = world(visual), cameraWorld = world(camera), anchorWorld = world(humanRoot), info = renderer.info.render, sortedFrames = debug.perf.samples.slice().sort(function(a,b){return a-b;}), frameAverage = sortedFrames.length ? sortedFrames.reduce(function(sum, value){return sum + value;}, 0) / sortedFrames.length : 0, frameP95 = sortedFrames.length ? sortedFrames[Math.min(sortedFrames.length - 1, Math.floor(sortedFrames.length * .95))] : 0; return { build: debug.build, href: location.href, isTouch: IS_TOUCH, maxTouchPoints: navigator.maxTouchPoints, pointerEvents: "PointerEvent" in window, mode: Game.mode, paused: Game.paused, inputLocked: Game.inputLocked, orientationPause: pausedByOrientation, sequence: Boolean(sequence), sleeping: Game.sleeping, joystick: { active: joystick.active, id: joystick.id, x: joystick.x, y: joystick.y }, input: debug.lastInput, velocity: { x: pug.vel.x, z: pug.vel.z }, pug: { x: pug.pos.x, z: pug.pos.z, state: pug.state, move: pug.move, phase: pug.phase }, root: { local: { x: pugRoot.position.x, y: pugRoot.position.y, z: pugRoot.position.z }, world: rootWorld, matrixAutoUpdate: pugRoot.matrixAutoUpdate, matrixWorldNeedsUpdate: pugRoot.matrixWorldNeedsUpdate, children: pugRoot.children.length }, visual: { player: glb.active ? "GLB" : "procedural", glbActive: glb.active, proceduralVisible: proceduralPug.visible, glbVisible: glb.model ? glb.model.visible : null, world: visualWorld, proceduralLocal: { x: proceduralPug.position.x, y: proceduralPug.position.y, z: proceduralPug.position.z }, proceduralRotation: { x: proceduralPug.rotation.x, y: proceduralPug.rotation.y, z: proceduralPug.rotation.z }, proceduralScale: { x: proceduralPug.scale.x, y: proceduralPug.scale.y, z: proceduralPug.scale.z }, bodyWorld: world(P.body), hierarchy: { bodyParent: P.body.parent === proceduralPug, proceduralParent: proceduralPug.parent === pugRoot, rootParent: pugRoot.parent === scene, sceneHasRoot: scene.children.indexOf(pugRoot) >= 0, sceneHasProcedural: scene.children.indexOf(proceduralPug) >= 0 } }, marker: { world: world(marker), visible: marker.visible }, camera: { frozen: debug.cameraFrozen, world: cameraWorld, local: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: cam.focus.x, y: cam.focus.y, z: cam.focus.z }, distanceToPug: Math.sqrt(Math.pow(cameraWorld.x-rootWorld.x,2)+Math.pow(cameraWorld.y-rootWorld.y,2)+Math.pow(cameraWorld.z-rootWorld.z,2)) }, screen: { pug: screen(rootWorld), marker: screen(world(marker)), anchor: screen(anchorWorld) }, animation: { animatePugCalls: debug.animateCalls, glbAnimation: glb.current ? glb.current._clip.name : null }, performance: { calls: info.calls, triangles: info.triangles, points: info.points, lines: info.lines, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, frameAverage: frameAverage, frameP95: frameP95, longFrames: debug.perf.longFrames, frameSamples: sortedFrames.length }, frames: debug.frames, updates: debug.updates, inputs: debug.inputs, dt: debug.lastDt, collisions: debug.collisions, lastReset: debug.lastReset, lastResetTime: debug.lastResetTime, touch: debug.touch, lastWriter: debug.lastWriter, result: debug.result }; }
     function testMovement() {
       var reason = gates(); if (reason) { debug.result = { pass: false, reason: reason }; return Promise.resolve(debug.result); }
       debug.testing = true; var before = point(), marks = { frames: debug.frames, updates: debug.updates, inputs: debug.inputs, collisions: debug.collisions }, previous = { active: joystick.active, x: joystick.x, y: joystick.y, id: joystick.id };
@@ -4491,7 +4543,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     button.textContent = "TEST MOVEMENT"; button.style.cssText = "pointer-events:auto;width:100%;padding:8px;margin-bottom:6px"; button.onclick = function () { testMovement(); };
     freeze.style.cssText = button.style.cssText; freeze.onclick = function () { debug.cameraFrozen = !debug.cameraFrozen; freeze.textContent = debug.cameraFrozen ? "CAMERA FROZEN" : "CAMERA LIVE"; }; freeze.textContent = "CAMERA LIVE";
     panel.appendChild(button); panel.appendChild(freeze); panel.appendChild(text); document.body.appendChild(panel);
-    setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\nperf calls " + s.performance.calls + " tris " + s.performance.triangles + " geo " + s.performance.geometries + " tex " + s.performance.textures + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
+    setInterval(function () { var s = getState(), r = s.result, e = s.touch.last; text.textContent = "DEBUG BUILD " + s.build + "\n" + (s.camera.frozen ? "CAMERA FROZEN" : "CAMERA LIVE") + " PLAYER " + s.visual.player + " GLB " + s.visual.glbActive + " proc " + s.visual.proceduralVisible + " children " + s.root.children + "\nstate " + s.pug.state + " move " + s.pug.move.toFixed(2) + " phase " + s.pug.phase.toFixed(2) + " anim " + s.animation.animatePugCalls + " " + (s.animation.glbAnimation || "-") + "\njoy " + s.joystick.active + " #" + s.joystick.id + " " + s.joystick.x.toFixed(2) + "," + s.joystick.y.toFixed(2) + " input " + s.input.x.toFixed(2) + "," + s.input.z.toFixed(2) + "\nvel " + s.velocity.x.toFixed(2) + "," + s.velocity.z.toFixed(2) + " root W " + s.root.world.x.toFixed(2) + "," + s.root.world.z.toFixed(2) + " visual W " + s.visual.world.x.toFixed(2) + "," + s.visual.world.z.toFixed(2) + "\ncam " + s.camera.world.x.toFixed(2) + "," + s.camera.world.y.toFixed(2) + "," + s.camera.world.z.toFixed(2) + " d" + s.camera.distanceToPug.toFixed(2) + "\nscreen pug " + s.screen.pug.x.toFixed(2) + "," + s.screen.pug.y.toFixed(2) + " anchor " + s.screen.anchor.x.toFixed(2) + "," + s.screen.anchor.y.toFixed(2) + " marker " + s.screen.marker.x.toFixed(2) + "," + s.screen.marker.y.toFixed(2) + "\nperf " + s.performance.frameAverage.toFixed(1) + "ms p95 " + s.performance.frameP95.toFixed(1) + " long " + s.performance.longFrames + " n" + s.performance.frameSamples + "\nrender calls " + s.performance.calls + " tris " + s.performance.triangles + " geo " + s.performance.geometries + " tex " + s.performance.textures + "\ntouch " + s.touch.touchstart + "/" + s.touch.touchmove + "/" + s.touch.touchend + "/" + s.touch.touchcancel + (e ? " " + e.type + " " + e.targetId + " #" + e.identifier : "") + "\nreset " + s.lastReset + " @" + s.lastResetTime.toFixed(0) + " coll " + s.collisions + (r ? "\nPROGRAMMATIC " + (r.pass ? "PASS" : "FAIL") + " d=" + (r.distance || 0).toFixed(3) : ""); }, 250);
   })();
 
   /* Start */
