@@ -2802,7 +2802,9 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       fz = Game.sleeping ? bedCZ : pug.pos.z + Math.cos(pug.yaw) * ahead;
     cam.followTarget.set(fx, fy, fz);
     cam.focus.lerp(cam.followTarget, focusK);
-    fx = cam.focus.x; fy = cam.focus.y; fz = cam.focus.z;
+    // Keep the look target soft, but build the camera position from the live
+    // follow target so movement is not delayed by two consecutive filters.
+    fx = cam.followTarget.x; fy = cam.followTarget.y; fz = cam.followTarget.z;
     var h = cam.distance * Math.cos(cam.pitch),
       v = cam.distance * Math.sin(cam.pitch) + 0.23;
     cam.targetPos.set(
@@ -2811,7 +2813,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       fz - Math.cos(cam.yaw) * h,
     );
     if (!Game.sleeping) {
-      cam.ray.copy(cam.targetPos).sub(cam.focus);
+      cam.ray.copy(cam.targetPos).sub(cam.followTarget);
       var max = 1;
       for (var i = 1; i <= 18; i++) {
         var t = i / 18,
@@ -2824,7 +2826,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         }
       }
       if (max < 1)
-        cam.targetPos.copy(cam.focus).addScaledVector(cam.ray, max * 0.94);
+        cam.targetPos.copy(cam.followTarget).addScaledVector(cam.ray, max * 0.94);
     }
     if (cam.targetPos.y < 0.4) cam.targetPos.y = 0.4;
     camera.position.lerp(cam.targetPos, k);
