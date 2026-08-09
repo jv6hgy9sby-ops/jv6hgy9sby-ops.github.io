@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "3.0-premium-procedural";
+window.MATVEY_BUILD = "rc6.1-ui3-low";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -69,7 +69,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     sfx: 0.7,
     sens: 1,
     calm: false,
-    quality: "medium",
+    quality: IS_TOUCH ? "low" : "medium",
   };
   var achievements = { sel: false, hitry: false, erzhan: false, king: false };
   var bestTime = null;
@@ -79,6 +79,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
       Object.keys(settings).forEach(function (k) {
         if (typeof stored[k] === typeof settings[k]) settings[k] = stored[k];
       });
+    if (IS_TOUCH && settings.quality === "medium") settings.quality = "low";
     var storedAch = JSON.parse(
       localStorage.getItem(STORAGE.achievements) || "null",
     );
@@ -4603,6 +4604,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         var info = renderer.info.render;
         return {
           samples: values.length,
+          build: window.MATVEY_BUILD,
           averageMs: average,
           p95Ms: p95,
           longFrames: values.filter(function (value) { return value > 50; }).length,
@@ -4624,6 +4626,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
     setInterval(function () {
       var snapshot = window.MatveyTelemetry.snapshot();
       telemetryPanel.textContent =
+        "BUILD " + snapshot.build + "\n" +
         "TELEMETRY\n" +
         "avg " + snapshot.averageMs.toFixed(1) + "  p95 " + snapshot.p95Ms.toFixed(1) + " ms\n" +
         "long " + snapshot.longFrames + " / " + snapshot.samples + "\n" +

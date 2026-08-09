@@ -32,7 +32,7 @@ window.onerror=function(message,source,line,column,error){
   console.error('Matvey game error:',message,source,line,column,error);
 };
 </script>
-<link rel="stylesheet" href="style.css?v=rc6-1-ui2">
+<link rel="stylesheet" href="style.css?v=rc6-1-ui3">
 <style>
 @media (hover:none), (pointer:coarse){
   #touch-ui{display:block!important}
@@ -61,15 +61,17 @@ window.onerror=function(message,source,line,column,error){
       </div>
     </div>
   </div>
-  <div id="watch-ind" class="hidden"></div>
-  <div id="prompt" class="hidden"></div>
-  <div id="voice-bubble" role="status" aria-live="polite">
-    <div id="voice-name">Матвей</div>
-    <div id="voice-text"></div>
-  </div>
-  <div id="hold-wrap" class="hidden">
-    <div id="hold-label">Изучение важного запаха</div>
-    <div id="hold-bar"><div id="hold-fill"></div></div>
+  <div id="game-messages">
+    <div id="watch-ind" class="hidden"></div>
+    <div id="voice-bubble" role="status">
+      <div id="voice-name">Матвей</div>
+      <div id="voice-text"></div>
+    </div>
+    <div id="prompt" class="hidden"></div>
+    <div id="hold-wrap" class="hidden">
+      <div id="hold-label">Изучение важного запаха</div>
+      <div id="hold-bar"><div id="hold-fill"></div></div>
+    </div>
   </div>
 </div>
 
@@ -187,6 +189,6 @@ fetch('assets/portrait-v3.txt',{cache:'no-cache'}).then(function(r){if(!r.ok)thr
   if(img&&clean)img.src='data:image/webp;base64,'+clean;
 }).catch(function(){});
 </script>
-<script src="debug/game-core-v3.js?v=rc6-1-ui2"></script>
+<script src="debug/game-core-v3.js?v=rc6-1-ui3"></script>
 </body>
 </html>
