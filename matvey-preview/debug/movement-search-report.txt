@@ -1,0 +1,85 @@
+=== Keyboard and input references ===
+2817:  window.addEventListener("keydown", function (e) {
+2820:      ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(c) >=
+2826:    if (c === "KeyE" || c === "Space") {
+2845:  window.addEventListener("keyup", function (e) {
+2847:    if (e.code === "KeyE" || e.code === "Space") actionHeld = false;
+3000:    if (keys.KeyW || keys.ArrowUp) z++;
+3533:        running = keys.ShiftLeft || keys.ShiftRight || touchRun,
+
+=== Movement and state references ===
+185:    stepsWalk: "assets/audio/sfx/steps-walk.mp3",
+186:    stepsRun: "assets/audio/sfx/steps-run.mp3",
+1467:      art.position.z = 0.028;
+2166:            if (/run/.test(n)) key = "run";
+2167:            else if (/walk/.test(n)) key = "walk";
+2172:            else if (/idle|stand/.test(n)) key = "idle";
+2175:          if (!actions.idle || (!actions.walk && !actions.run)) return;
+2211:    if (pug.state === "walk") return pug.move > 0.72 ? "run" : "walk";
+2216:    return "idle";
+2221:      var action = glb.actions[glbAnimationKey()] || glb.actions.idle;
+2295:    var run = clamp((pug.move - 0.62) / 0.38, 0, 1),
+2296:      moving = st === "walk" ? clamp(pug.move, 0.16, 1) : 0;
+2298:    if (st === "walk" || st === "idle") {
+2299:      var amp = lerp(0.48, 0.67, run) * moving,
+2307:        Math.abs(step) * lerp(0.018, 0.036, run) * moving;
+2308:      proceduralPug.rotation.z = step * lerp(0.055, 0.105, run) * moving;
+2309:      P.rear.position.x = step * 0.032 * moving;
+2318:        0.52 + Math.abs(step) * lerp(0.025, 0.18, run) * moving;
+2320:        0.52 + Math.abs(step2) * lerp(0.025, 0.18, run) * moving;
+2337:      if (pug.lick > 0 || run > 0.82) {
+2341:        P.jaw.rotation.x = Math.min(P.jaw.rotation.x, -0.12 - run * 0.08);
+2343:      var breathe = 1 + Math.sin(t * (run ? 3.2 : 1.75)) * 0.014;
+2347:      if (st === "idle" && !talking) {
+2348:        proceduralPug.position.x = Math.sin(t * 0.65) * 0.006;
+2391:      P.body.position.z = pugBase.bodyPos.z + Math.sin(t * 8) * 0.009;
+2813:    $("btn-run").classList.remove("active");
+2840:      if (Game.paused) resumeGame();
+2974:    $("btn-run").addEventListener(
+2983:    $("btn-run").addEventListener(
+2992:    $("btn-run").addEventListener("touchcancel", function () {
+3019:    paused: false,
+3052:    pausedByOrientation = false,
+3181:      humanRoot.position.x,
+3182:      humanRoot.position.z,
+3204:            treat.position.set(humanRoot.position.x, 1, humanRoot.position.z);
+3208:              lerp(humanRoot.position.x, pug.pos.x, k),
+3210:              lerp(humanRoot.position.z, pug.pos.z, k),
+3252:            setPugState("idle");
+3289:            setPugState("idle");
+3386:        humanRoot.position.x,
+3387:        humanRoot.position.z,
+3499:      target = { x: humanRoot.position.x, y: 2.2, z: humanRoot.position.z };
+3533:        running = keys.ShiftLeft || keys.ShiftRight || touchRun,
+3534:        speed = running ? 3.35 : 1.85;
+3541:      pug.vel.x = lerp(pug.vel.x, mx * speed * input.mag, clamp(dt * 12, 0, 1));
+3542:      pug.vel.z = lerp(pug.vel.z, mz * speed * input.mag, clamp(dt * 12, 0, 1));
+3553:        pug.phase += sp * dt * (running ? 6.2 : 5.4);
+3559:        setPugState("walk");
+3563:          AudioManager.playOne(running ? "stepsRun" : "stepsWalk", 0.42, 120);
+3568:        if (pug.state === "walk") setPugState("idle");
+3623:          setPugState("idle");
+3628:        if (pug.state === "sniff") setPugState("idle");
+3697:              setPugState("idle");
+3705:      var dx = human.target.x - humanRoot.position.x,
+3706:        dz = human.target.z - humanRoot.position.z,
+3709:        humanRoot.position.x += (dx / d) * 1.12 * dt;
+3710:        humanRoot.position.z += (dz / d) * 1.12 * dt;
+3758:          w.position.x += Math.sin(s.phase * 1.7 + j) * dt * 0.025;
+3838:      paused: false,
+3939:    pausedByOrientation = false;
+3942:    if (Game.mode !== "playing" || Game.paused) return;
+3944:    Game.paused = true;
+3950:    Game.paused = false;
+4027:      if (Game.paused) resumeGame();
+4103:      if (Game.mode === "playing" && !Game.paused && !pausedByOrientation) {
+4104:        pausedByOrientation = true;
+4116:      if (pausedByOrientation) {
+4117:        pausedByOrientation = false;
+4168:      !Game.paused &&
+4169:      !pausedByOrientation
+4174:    if (Game.mode === "playing" && !Game.paused && !pausedByOrientation)
+4205:      if (Game.paused) resumeGame();
+4247:        if (Game.mode === "playing" && !Game.paused && !pausedByOrientation)
+4289:      pug.pos.set(humanRoot.position.x + 1, 0, humanRoot.position.z + 0.4);
+4371:    if (!Game.paused && !pausedByOrientation) {
