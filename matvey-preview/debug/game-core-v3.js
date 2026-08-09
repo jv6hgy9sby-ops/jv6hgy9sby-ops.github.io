@@ -4605,7 +4605,7 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
           samples: values.length,
           averageMs: average,
           p95Ms: p95,
-          longFrames: telemetry.longFrames,
+          longFrames: values.filter(function (value) { return value > 50; }).length,
           quality: settings.quality,
           dpr: renderer.getPixelRatio(),
           shadows: renderer.shadowMap.enabled,
