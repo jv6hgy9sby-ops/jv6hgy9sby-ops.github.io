@@ -4617,6 +4617,21 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         };
       },
     };
+    var telemetryPanel = document.createElement("pre");
+    telemetryPanel.id = "matvey-telemetry";
+    telemetryPanel.setAttribute("aria-hidden", "true");
+    document.body.appendChild(telemetryPanel);
+    setInterval(function () {
+      var snapshot = window.MatveyTelemetry.snapshot();
+      telemetryPanel.textContent =
+        "TELEMETRY\n" +
+        "avg " + snapshot.averageMs.toFixed(1) + "  p95 " + snapshot.p95Ms.toFixed(1) + " ms\n" +
+        "long " + snapshot.longFrames + " / " + snapshot.samples + "\n" +
+        "quality " + snapshot.quality + "  DPR " + snapshot.dpr.toFixed(2) + "\n" +
+        "shadow " + (snapshot.shadows ? snapshot.shadowMap : "off") + "\n" +
+        "draw " + snapshot.drawCalls + "  tri " + snapshot.triangles + "\n" +
+        "geo " + snapshot.geometries + "  tex " + snapshot.textures;
+    }, 750);
   })();
 
   /* Start */
