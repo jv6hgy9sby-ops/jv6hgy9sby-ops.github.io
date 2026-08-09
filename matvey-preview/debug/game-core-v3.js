@@ -3807,7 +3807,8 @@ window.MATVEY_BUILD = "3.0-premium-procedural";
         human.lookT = Game.looking ? rand(3, 4.4) : rand(3.2, 5.8);
         human.yawTarget = Game.looking ? LOOK_YAW : AWAY_YAW;
         setWatch(Game.looking);
-        if (!Game.looking) speakMatvey("bedFree", "Оперативное окно открыто.");
+        if (!Game.looking)
+          speakMatvey("bedFreeText", "Оперативное окно открыто.");
       }
       humanRoot.rotation.y = angleLerp(
         humanRoot.rotation.y,
