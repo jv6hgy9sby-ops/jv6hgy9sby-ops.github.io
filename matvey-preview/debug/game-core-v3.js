@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-ui3-low";
+window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -595,15 +595,36 @@ window.MATVEY_BUILD = "rc6.1-ui3-low";
     Game.mood = clamp(value, 0, 100);
     $("mood-fill").style.width = Game.mood + "%";
   }
+  var hudRuntime = { promptVisible: false, promptText: "", actionLabel: "ДЕЙСТВИЕ", holdVisible: false, holdPercent: -1, watchVisible: false, watchState: "" };
   function setPrompt(text, short) {
-    $("prompt").classList.toggle("hidden", !text);
-    if (text) $("prompt").textContent = text;
-    $("btn-action-label").textContent = short || "ДЕЙСТВИЕ";
+    var visible = Boolean(text), label = short || "ДЕЙСТВИЕ", prompt = $("prompt");
+    if (hudRuntime.promptVisible !== visible) {
+      hudRuntime.promptVisible = visible;
+      prompt.classList.toggle("hidden", !visible);
+    }
+    if (visible && hudRuntime.promptText !== text) {
+      hudRuntime.promptText = text;
+      prompt.textContent = text;
+    }
+    if (!visible) hudRuntime.promptText = "";
+    if (hudRuntime.actionLabel !== label) {
+      hudRuntime.actionLabel = label;
+      $("btn-action-label").textContent = label;
+    }
   }
   function setHold(value) {
-    $("hold-wrap").classList.toggle("hidden", value === null);
-    if (value !== null)
-      $("hold-fill").style.width = Math.round(clamp(value, 0, 1) * 100) + "%";
+    var visible = value !== null, hold = $("hold-wrap");
+    if (hudRuntime.holdVisible !== visible) {
+      hudRuntime.holdVisible = visible;
+      hold.classList.toggle("hidden", !visible);
+    }
+    if (visible) {
+      var percent = Math.round(clamp(value, 0, 1) * 100);
+      if (hudRuntime.holdPercent !== percent) {
+        hudRuntime.holdPercent = percent;
+        $("hold-fill").style.width = percent + "%";
+      }
+    } else hudRuntime.holdPercent = -1;
   }
   function setWatch(looking) {
     var el = $("watch-ind");
