@@ -508,8 +508,7 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       return;
     var path = VOICE_PATHS[key];
     if (!path) return;
-    AudioManager.probe(path).then(function (ok) {
-      if (!ok) return;
+    function playVoice() {
       var a = AudioManager.make(path, false);
       voiceState.audio = a;
       a.volume = AudioManager.effective("voice", 1);
@@ -523,6 +522,14 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
       a.onerror = finish;
       var p = a.play();
       if (p && p.catch) p.catch(finish);
+    }
+    if (options.immediate) {
+      playVoice();
+      return;
+    }
+    AudioManager.probe(path).then(function (ok) {
+      if (!ok) return;
+      playVoice();
     });
   }
   var MatveyDialogue = {
@@ -3223,10 +3230,13 @@ window.MATVEY_BUILD = "rc6.1-ui4-rail-domcache";
     Game.inputLocked = true;
     setPugState("lie");
     AudioManager.setArea("home");
+    speakMatvey("start", "Так. Проверим обстановку.", {
+      force: true,
+      immediate: true,
+    });
     timer(function () {
       Game.inputLocked = false;
       quest(1);
-      speakMatvey("start", "Так. Проверим обстановку.", { force: true });
     }, 650);
   }
   function activateVacuum() {
