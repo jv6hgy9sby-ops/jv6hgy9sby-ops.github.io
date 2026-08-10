@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-voicehotfix1";
+window.MATVEY_BUILD = "rc6.1-polish1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -1686,8 +1686,6 @@ window.MATVEY_BUILD = "rc6.1-voicehotfix1";
     }
     var art1 = frame(-2.98, 1.65, 3.45, 0.78, 0.62, 0x315f62);
     art1.rotation.y = Math.PI / 2;
-    var art2 = frame(4.02, 1.7, -3.55, 0.64, 0.82, 0x9d4f45);
-    art2.rotation.y = -Math.PI / 2;
     box(1.35, 0.055, 0.28, M.woodDark, -0.4, 1.25, -6.62, null, true, false);
     for (var i = 0; i < 6; i++)
       box(
@@ -4311,6 +4309,10 @@ window.MATVEY_BUILD = "rc6.1-voicehotfix1";
     showScreen("screen-settings");
   });
   $("btn-settings-back").addEventListener("click", function () {
+    if (screenReturn === "game") {
+      resumeGame();
+      return;
+    }
     showScreen(
       screenReturn === "pause"
         ? "screen-pause"
@@ -4340,6 +4342,12 @@ window.MATVEY_BUILD = "rc6.1-voicehotfix1";
       if (Game.paused) resumeGame();
       else pauseGame();
     }
+  });
+  $("btn-game-settings").addEventListener("click", function () {
+    if (Game.mode !== "playing") return;
+    if (!Game.paused) pauseGame();
+    screenReturn = "game";
+    showScreen("screen-settings");
   });
   $("btn-mute").addEventListener("click", function () {
     if (settings.sound) {
