@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-batch2";
+window.MATVEY_BUILD = "rc6.1-texture1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -913,7 +913,7 @@ window.MATVEY_BUILD = "rc6.1-batch2";
   }
   function makeTileTexture() {
     return canvasTexture(
-      384,
+      512,
       function (ctx, s) {
         ctx.fillStyle = "#6f716c";
         ctx.fillRect(0, 0, s, s);
@@ -993,6 +993,22 @@ window.MATVEY_BUILD = "rc6.1-batch2";
     sofa: makeFabricTexture("#23494a"),
     sheet: makeFabricTexture("#8d3040"),
   };
+  function configureFloorTexture(texture) {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
+    texture.anisotropy = Math.min(
+      8,
+      renderer.capabilities.getMaxAnisotropy
+        ? renderer.capabilities.getMaxAnisotropy()
+        : 1,
+    );
+    texture.needsUpdate = true;
+  }
+  configureFloorTexture(TEX.wood);
+  configureFloorTexture(TEX.tile);
   function mat(color, rough, metal, map) {
     var material = new THREE.MeshStandardMaterial({
       color: color,
