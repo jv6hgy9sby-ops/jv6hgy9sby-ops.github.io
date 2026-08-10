@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-render1";
+window.MATVEY_BUILD = "rc6.1-batch1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -1117,8 +1117,18 @@ window.MATVEY_BUILD = "rc6.1-render1";
   function ensureCollider(c) {
     if (colliders.indexOf(c) < 0) colliders.push(c);
   }
+  var mobileStaticBatches = [];
+  function staticBatchMesh(m, zone) {
+    mobileStaticBatches.push({ mesh: m, zone: zone });
+    return m;
+  }
+  function wallZone(x, z) {
+    if (x < -3 || z > 2) return "kitchen-architecture";
+    if (x > 4) return "bedroom-architecture";
+    return "home-architecture";
+  }
   function wallX(x, z0, z1) {
-    box(
+    staticBatchMesh(box(
       0.28,
       2.55,
       Math.abs(z1 - z0),
@@ -1129,8 +1139,8 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       true,
-    );
-    box(
+    ), wallZone(x, (z0 + z1) / 2));
+    staticBatchMesh(box(
       0.34,
       0.13,
       Math.abs(z1 - z0),
@@ -1141,8 +1151,8 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       true,
-    );
-    box(
+    ), wallZone(x, (z0 + z1) / 2));
+    staticBatchMesh(box(
       0.34,
       0.055,
       Math.abs(z1 - z0),
@@ -1153,11 +1163,11 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       false,
-    );
+    ), wallZone(x, (z0 + z1) / 2));
     return addCollider(x - 0.16, x + 0.16, Math.min(z0, z1), Math.max(z0, z1));
   }
   function wallZ(z, x0, x1) {
-    box(
+    staticBatchMesh(box(
       Math.abs(x1 - x0),
       2.55,
       0.28,
@@ -1168,8 +1178,8 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       true,
-    );
-    box(
+    ), wallZone((x0 + x1) / 2, z));
+    staticBatchMesh(box(
       Math.abs(x1 - x0),
       0.13,
       0.34,
@@ -1180,8 +1190,8 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       true,
-    );
-    box(
+    ), wallZone((x0 + x1) / 2, z));
+    staticBatchMesh(box(
       Math.abs(x1 - x0),
       0.055,
       0.34,
@@ -1192,7 +1202,7 @@ window.MATVEY_BUILD = "rc6.1-render1";
       null,
       false,
       false,
-    );
+    ), wallZone((x0 + x1) / 2, z));
     return addCollider(Math.min(x0, x1), Math.max(x0, x1), z - 0.16, z + 0.16);
   }
   function makeFloor() {
@@ -1446,21 +1456,59 @@ window.MATVEY_BUILD = "rc6.1-render1";
     g.position.set(x, 0, z);
     g.rotation.y = yaw;
     scene.add(g);
-    box(0.52, 0.07, 0.52, M.woodDark, 0, 0.45, 0, g, true, false);
-    box(0.52, 0.56, 0.07, M.woodDark, 0, 0.75, -0.23, g, true, false);
+    staticBatchMesh(box(0.52, 0.07, 0.52, M.woodDark, 0, 0.45, 0, g, true, false), "kitchen-furniture");
+    staticBatchMesh(box(0.52, 0.56, 0.07, M.woodDark, 0, 0.75, -0.23, g, true, false), "kitchen-furniture");
     [
       [-0.2, -0.2],
       [0.2, -0.2],
       [-0.2, 0.2],
       [0.2, 0.2],
     ].forEach(function (o) {
-      box(0.065, 0.44, 0.065, M.woodDark, o[0], 0.22, o[1], g, true, false);
+      staticBatchMesh(box(0.065, 0.44, 0.065, M.woodDark, o[0], 0.22, o[1], g, true, false), "kitchen-furniture");
     });
     addCollider(x - 0.29, x + 0.29, z - 0.29, z + 0.29);
   }
   chair(-7, 3.5, Math.PI / 2);
   chair(-4.3, 3.5, -Math.PI / 2);
   chair(-5.6, 5, Math.PI);
+  function bakeMobileStaticBatches() {
+    if (!IS_TOUCH) return;
+    scene.updateMatrixWorld(true);
+    var buckets = {};
+    mobileStaticBatches.forEach(function (entry) {
+      var m = entry.mesh;
+      if (!m || !m.geometry || !m.material || m.material.transparent || !m.visible) return;
+      var key = entry.zone + "|" + m.material.uuid + "|" + m.castShadow + "|" + m.receiveShadow;
+      (buckets[key] || (buckets[key] = [])).push(entry);
+    });
+    Object.keys(buckets).forEach(function (key) {
+      var entries = buckets[key], first = entries[0].mesh, attrs = {}, names = Object.keys(first.geometry.attributes);
+      if (entries.length < 2) return;
+      var chunks = entries.map(function (entry) {
+        var g = entry.mesh.geometry.index ? entry.mesh.geometry.toNonIndexed() : entry.mesh.geometry.clone();
+        g.applyMatrix4(entry.mesh.matrixWorld);
+        return g;
+      });
+      names.forEach(function (name) {
+        var source = chunks[0].getAttribute(name), total = 0;
+        for (var i = 0; i < chunks.length; i++) total += chunks[i].getAttribute(name).count;
+        var data = new source.array.constructor(total * source.itemSize), offset = 0;
+        chunks.forEach(function (g) { var a = g.getAttribute(name); data.set(a.array, offset); offset += a.array.length; });
+        attrs[name] = new THREE.BufferAttribute(data, source.itemSize, source.normalized);
+      });
+      var merged = new THREE.BufferGeometry();
+      Object.keys(attrs).forEach(function (name) { merged.setAttribute(name, attrs[name]); });
+      merged.computeBoundingBox();
+      merged.computeBoundingSphere();
+      var batch = new THREE.Mesh(merged, first.material);
+      batch.castShadow = first.castShadow;
+      batch.receiveShadow = first.receiveShadow;
+      batch.name = "mobile-static-batch:" + key;
+      scene.add(batch);
+      entries.forEach(function (entry) { entry.mesh.visible = false; });
+    });
+  }
+  bakeMobileStaticBatches();
   var bowl = cylinder(0.18, 0.13, 0.09, M.red, -4.05, 0.055, 6.28, null, 14);
   var water = cylinder(
     0.15,
