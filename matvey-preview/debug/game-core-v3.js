@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-audio-pool1";
+window.MATVEY_BUILD = "rc6.1-render1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -800,7 +800,7 @@ window.MATVEY_BUILD = "rc6.1-audio-pool1";
   var renderer, scene, camera, dirLight, roomLight, rimLight;
   try {
     renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: !IS_TOUCH,
       powerPreference: "high-performance",
       alpha: false,
       stencil: false,
@@ -4815,6 +4815,7 @@ window.MATVEY_BUILD = "rc6.1-audio-pool1";
           events: { crumb: eventRings.crumb.summary(), human: eventRings.human.summary(), door: eventRings.door.summary() },
           quality: settings.quality,
           dpr: renderer.getPixelRatio(),
+          antialias: !IS_TOUCH,
           shadows: renderer.shadowMap.enabled,
           shadowMap: dirLight.shadow.mapSize.x,
           drawCalls: info.calls,
@@ -4836,7 +4837,7 @@ window.MATVEY_BUILD = "rc6.1-audio-pool1";
         "long " + snapshot.frame.long + " / " + snapshot.frame.samples + "  cpu " + snapshot.cpu.average.toFixed(1) + " ms\n" +
         "top " + top.map(function (x) { return x.name + " " + x.average.toFixed(1); }).join(" | ") + "\n" +
         "event c/h/d p95|max " + events.crumb.p95.toFixed(1) + "/" + events.crumb.max.toFixed(1) + " " + events.human.p95.toFixed(1) + "/" + events.human.max.toFixed(1) + " " + events.door.p95.toFixed(1) + "/" + events.door.max.toFixed(1) + " ms\n" +
-        "quality " + snapshot.quality + " DPR " + snapshot.dpr.toFixed(2) + " shadow " + (snapshot.shadows ? snapshot.shadowMap : "off") + "\n" +
+        "quality " + snapshot.quality + " DPR " + snapshot.dpr.toFixed(2) + " aa " + (snapshot.antialias ? "on" : "off") + " shadow " + (snapshot.shadows ? snapshot.shadowMap : "off") + "\n" +
         "draw " + snapshot.drawCalls + " tri " + snapshot.triangles + " geo " + snapshot.geometries + " tex " + snapshot.textures;
     }, 750);
   })();
