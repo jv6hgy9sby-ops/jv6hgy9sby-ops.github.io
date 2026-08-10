@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-polish1";
+window.MATVEY_BUILD = "rc6.1-camera2";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -1637,7 +1637,7 @@ window.MATVEY_BUILD = "rc6.1-polish1";
     2.1,
   );
   bedRug.rotation.x = -Math.PI / 2;
-  addCollider(6, 8.6, 2.7, 5.96);
+  var bedCollider = addCollider(6, 8.6, 2.7, 5.96);
   addCollider(5.2, 5.9, 5.15, 5.85);
   for (var ci = 0; ci < 10; ci++) {
     var c = box(
@@ -2954,6 +2954,8 @@ window.MATVEY_BUILD = "rc6.1-polish1";
 
   /* Camera */
   var CAMERA_BASE_HEIGHT = 0.48;
+  var NORMAL_CAMERA_PITCH = 0.28;
+  var NORMAL_FOCUS_Y = 0.50;
   var cam = {
     yaw: -2.4,
     pitch: 0.32,
@@ -2973,6 +2975,14 @@ window.MATVEY_BUILD = "rc6.1-polish1";
       );
     });
   }
+  function blockedForCamera(x, z, r) {
+    var ignoreBed = Game.quest === 8 || pug.onBed || Game.sleeping;
+    r = r || 0.1;
+    return colliders.some(function (c) {
+      if (ignoreBed && c === bedCollider) return false;
+      return x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r;
+    });
+  }
   function desiredDistance() {
     if (Game.sleeping) return 8.6;
     if (pug.pos.z < -7) return 5.85;
@@ -2990,13 +3000,13 @@ window.MATVEY_BUILD = "rc6.1-polish1";
     var talkZoom =
       voiceState.speaking && pug.move < 0.18 && !Game.sleeping ? 0.24 : 0;
     cam.distance = lerp(cam.distance, desiredDistance() - talkZoom, k);
-    cam.pitch = lerp(cam.pitch, Game.sleeping ? 0.48 : 0.32, focusK);
+    cam.pitch = lerp(cam.pitch, Game.sleeping ? 0.48 : NORMAL_CAMERA_PITCH, focusK);
     if (Game.mode === "finale" && !calm) cam.yaw += dt * 0.038;
     if (!Game.sleeping && !manualCamera && pug.move > 0.08)
       cam.yaw = angleLerp(cam.yaw, pug.yaw, 1 - Math.exp(-dt * (calm ? 0.1 : 0.24)));
     var ahead = Game.sleeping ? 0 : clamp(pug.move * (calm ? 0.12 : 0.24), 0, calm ? 0.12 : 0.24),
       fx = Game.sleeping ? bedCX : pug.pos.x + Math.sin(pug.yaw) * ahead,
-      fy = Game.sleeping ? 0.85 : 0.43,
+      fy = Game.sleeping ? 0.85 : NORMAL_FOCUS_Y,
       fz = Game.sleeping ? bedCZ : pug.pos.z + Math.cos(pug.yaw) * ahead;
     cam.followTarget.set(fx, fy, fz);
     cam.focus.lerp(cam.followTarget, focusK);
@@ -3018,7 +3028,7 @@ window.MATVEY_BUILD = "rc6.1-polish1";
           px = fx + cam.ray.x * t,
           pz = fz + cam.ray.z * t,
           py = fy + cam.ray.y * t;
-        if (blocked(px, pz, 0.09) || py < 0.34) {
+        if (blockedForCamera(px, pz, 0.09) || py < 0.34) {
           max = Math.max(0.16, (i - 1) / 18);
           break;
         }
