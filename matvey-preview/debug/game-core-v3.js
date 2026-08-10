@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-profiler3";
+window.MATVEY_BUILD = "rc6.1-audio-pool1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -250,9 +250,10 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
 
   var AudioManager = {
     unlocked: false,
-    cache: {},
     availability: {},
     activeOneShots: [],
+    pools: {},
+    preparedFirstCrumb: null,
     music: null,
     ambient: null,
     vacuum: null,
@@ -266,6 +267,42 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
         var p = silent.play();
         if (p && p.catch) p.catch(function () {});
       } catch (error) {}
+    },
+    prepareFrequentFromGesture: function () {
+      if (this.pools.stepsWalk) return;
+      var specs = [["stepsWalk", 3], ["stepsRun", 3], ["collect", 2], ["snort", 2], ["sniff", 2]];
+      for (var s = 0; s < specs.length; s++) {
+        var key = specs[s][0], size = specs[s][1];
+        this.pools[key] = [];
+        for (var i = 0; i < size; i++) this.pools[key].push(this.makePoolItem(ASSET_PATHS[key]));
+      }
+      this.preparedFirstCrumb = this.makePoolItem(VOICE_PATHS.firstCrumb);
+      var self = this, queue = [];
+      Object.keys(this.pools).forEach(function (key) { self.pools[key].forEach(function (item) { queue.push(item); }); });
+      queue.push(this.preparedFirstCrumb);
+      function warmNext() {
+        var item = queue.shift();
+        if (!item) return;
+        self.warmPoolItem(item);
+        if (queue.length) {
+          if (window.requestIdleCallback) window.requestIdleCallback(warmNext, { timeout: 800 });
+          else setTimeout(warmNext, 50);
+        }
+      }
+      if (window.requestIdleCallback) window.requestIdleCallback(warmNext, { timeout: 800 });
+      else setTimeout(warmNext, 50);
+    },
+    makePoolItem: function (path) {
+      var self = this, a = this.make(path, false), item = { audio: a, path: path, ready: false, busy: false, failed: false };
+      item.fail = function () { item.ready = false; item.busy = false; item.failed = true; self.availability[path] = false; };
+      a.onended = function () { item.busy = false; try { a.currentTime = 0; } catch (error) {} };
+      a.onerror = item.fail;
+      a.oncanplaythrough = function () { item.ready = true; self.availability[path] = true; a.oncanplaythrough = null; };
+      return item;
+    },
+    warmPoolItem: function (item) {
+      if (item.failed || this.availability[item.path] === false) return;
+      try { item.audio.preload = "auto"; item.audio.load(); } catch (error) { item.fail(); }
     },
     effective: function (category, base) {
       if (!settings.sound) return 0;
@@ -311,6 +348,19 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
       if (this.lastPlayed[key] && t - this.lastPlayed[key] < wait)
         return Promise.resolve(false);
       this.lastPlayed[key] = t;
+      var pool = this.pools[key];
+      if (pool) {
+        var item = null;
+        for (var p = 0; p < pool.length; p++) if (pool[p].ready && !pool[p].busy && !pool[p].failed) { item = pool[p]; break; }
+        if (!item) return Promise.resolve(false);
+        item.busy = true;
+        var pooled = item.audio;
+        pooled.volume = this.effective("sfx", volume === undefined ? 1 : volume);
+        try { pooled.currentTime = 0; } catch (error) {}
+        var pooledPlay = pooled.play();
+        if (pooledPlay && pooledPlay.catch) pooledPlay.catch(item.fail);
+        return Promise.resolve(true);
+      }
       var self = this;
       return this.probe(path).then(function (ok) {
         if (!ok) return false;
@@ -508,8 +558,8 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
       return;
     var path = VOICE_PATHS[key];
     if (!path) return;
-    function playVoice() {
-      var a = AudioManager.make(path, false);
+    function playVoice(prepared) {
+      var a = prepared || AudioManager.make(path, false);
       voiceState.audio = a;
       a.volume = AudioManager.effective("voice", 1);
       AudioManager.duck(true);
@@ -518,11 +568,17 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
         voiceState.speaking = false;
         AudioManager.duck(false);
       };
-      a.onended = finish;
-      a.onerror = finish;
+      if (!prepared) { a.onended = finish; a.onerror = finish; }
       var p = a.play();
       if (p && p.catch) p.catch(finish);
     }
+    var firstCrumb = key === "firstCrumb" ? AudioManager.preparedFirstCrumb : null;
+    if (firstCrumb && firstCrumb.ready && !firstCrumb.busy) {
+      firstCrumb.busy = true;
+      playVoice(firstCrumb.audio);
+      return;
+    }
+    if (firstCrumb) return;
     if (options.immediate) {
       playVoice();
       return;
@@ -4136,6 +4192,7 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
   function enableSoundFromGesture(message) {
     settings.sound = true;
     AudioManager.unlock();
+    AudioManager.prepareFrequentFromGesture();
     saveSettings();
     AudioManager.setArea(Game.area || "home");
     if (Game.vacuumActive) AudioManager.startVacuum();
@@ -4149,7 +4206,10 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
     resetGame();
     TelegramApp.fullscreen();
     TelegramApp.lockLandscape();
-    if (settings.sound) AudioManager.unlock();
+    if (settings.sound) {
+      AudioManager.unlock();
+      AudioManager.prepareFrequentFromGesture();
+    }
     startGame();
     syncSettings();
   });
@@ -4157,7 +4217,10 @@ window.MATVEY_BUILD = "rc6.1-profiler3";
     resetGame();
     TelegramApp.fullscreen();
     TelegramApp.lockLandscape();
-    if (settings.sound) AudioManager.unlock();
+    if (settings.sound) {
+      AudioManager.unlock();
+      AudioManager.prepareFrequentFromGesture();
+    }
     startGame();
     syncSettings();
   });
