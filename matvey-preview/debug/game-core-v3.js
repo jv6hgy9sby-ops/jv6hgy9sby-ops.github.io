@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-batch1";
+window.MATVEY_BUILD = "rc6.1-batch2";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -1437,7 +1437,7 @@ window.MATVEY_BUILD = "rc6.1-batch1";
     [-0.65, 0.45],
     [0.65, 0.45],
   ].forEach(function (o) {
-    box(
+    staticBatchMesh(box(
       0.1,
       0.72,
       0.1,
@@ -1448,7 +1448,7 @@ window.MATVEY_BUILD = "rc6.1-batch1";
       null,
       true,
       false,
-    );
+    ), "kitchen-furniture");
   });
   addCollider(-6.35, -4.85, 2.92, 4.08);
   function chair(x, z, yaw) {
