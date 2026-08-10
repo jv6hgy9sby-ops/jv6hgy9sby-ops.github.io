@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-camera2";
+window.MATVEY_BUILD = "rc6.1-funvoice1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -239,6 +239,21 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     vacuumHit: "assets/audio/voice/voice-vacuum-hit.wav",
     bedFreeText: "assets/audio/voice/voice-bed-free-text.wav",
     sound: "assets/audio/voice/voice-sound.wav",
+    "fun-start-alt": "assets/audio/voice/voice-fun-start-alt.wav",
+    "fun-kitchen-enter": "assets/audio/voice/voice-fun-kitchen-enter.wav",
+    "fun-crumb-3": "assets/audio/voice/voice-fun-crumb-3.wav",
+    "fun-crumb-7": "assets/audio/voice/voice-fun-crumb-7.wav",
+    "fun-crumb-last": "assets/audio/voice/voice-fun-crumb-last.wav",
+    "fun-run": "assets/audio/voice/voice-fun-run.wav",
+    "fun-human-wait": "assets/audio/voice/voice-fun-human-wait.wav",
+    "fun-smell-last": "assets/audio/voice/voice-fun-smell-last.wav",
+    "fun-door-open": "assets/audio/voice/voice-fun-door-open.wav",
+    "fun-bed-jump": "assets/audio/voice/voice-fun-bed-jump.wav",
+    "fun-vacuum-hit": "assets/audio/voice/voice-fun-vacuum-hit.wav",
+    "fun-vacuum-escape": "assets/audio/voice/voice-fun-vacuum-escape.wav",
+    "fun-idle-food": "assets/audio/voice/voice-fun-idle-food.wav",
+    "fun-idle-herring": "assets/audio/voice/voice-fun-idle-herring.wav",
+    "fun-idle-tired": "assets/audio/voice/voice-fun-idle-tired.wav",
   };
   var AVAILABLE_AUDIO_PATHS = {
     "assets/audio/sfx/collect.mp3": true,
@@ -280,6 +295,7 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       var voiceKeys = [
         "firstCrumb", "vacuum", "beg", "leash", "door",
         "dialogue-humanNear-0", "dialogue-humanNear-1", "dialogue-humanNear-2",
+        "fun-start-alt", "fun-kitchen-enter", "fun-crumb-3", "fun-crumb-7", "fun-crumb-last", "fun-run", "fun-human-wait", "fun-smell-last", "fun-door-open", "fun-bed-jump", "fun-vacuum-hit", "fun-vacuum-escape", "fun-idle-food", "fun-idle-herring", "fun-idle-tired",
       ];
       voiceKeys.forEach(function (key) {
         AudioManager.preparedVoices[key] = AudioManager.makePoolItem(VOICE_PATHS[key]);
@@ -580,6 +596,11 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       var p = a.play();
       if (p && p.catch) p.catch(finish);
     }
+    /* Start is a user gesture: it must not wait for the background warmup queue. */
+    if (options.immediate) {
+      playVoice();
+      return;
+    }
     var preparedVoice = AudioManager.preparedVoices[key];
     if (preparedVoice && preparedVoice.ready && !preparedVoice.busy) {
       preparedVoice.busy = true;
@@ -588,10 +609,6 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     }
     if (preparedVoice) return;
     if (AudioManager.availability[path] === false) return;
-    if (options.immediate) {
-      playVoice();
-      return;
-    }
     /* VOICE_PATHS is the validated manifest: never put a HEAD probe in gameplay. */
     playVoice();
   }
@@ -617,7 +634,6 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       return true;
     }
   };
-
   /* UI */
   var screenIds = [
     "screen-start",
@@ -999,6 +1015,28 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     fur: makeFurTexture(),
     sofa: makeFabricTexture("#23494a"),
     sheet: makeFabricTexture("#8d3040"),
+  };
+  var FunVoice = {
+    lastAt: -Infinity,
+    used: {},
+    travel: 0,
+    humanWait: 0,
+    vacuumDanger: false,
+    say: function (key, text, once) {
+      var t = nowMs();
+      if (t - this.lastAt < 12000 || (once && this.used[key]) || voiceState.speaking) return false;
+      this.lastAt = t;
+      if (once) this.used[key] = true;
+      speakMatvey(key, text, { force: true });
+      return true;
+    },
+    reset: function () {
+      this.lastAt = -Infinity;
+      this.used = {};
+      this.travel = 0;
+      this.humanWait = 0;
+      this.vacuumDanger = false;
+    },
   };
   function configureFloorTexture(texture) {
     texture.wrapS = THREE.RepeatWrapping;
@@ -3366,7 +3404,7 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     Game.inputLocked = true;
     setPugState("lie");
     AudioManager.setArea("home");
-    speakMatvey("start", "Так. Проверим обстановку.", {
+    speakMatvey("fun-start-alt", "Жопохрюк выходит на охоту.", {
       force: true,
       immediate: true,
     });
@@ -3405,6 +3443,9 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     pug.lickT = 0.01;
     if (Game.crumbs === 1)
       speakMatvey("firstCrumb", "Крошка не валялась. Она ждала профессионала.");
+    if (Game.crumbs === 3) FunVoice.say("fun-crumb-3", "Третья крошечка. Работа идёт отлично.");
+    if (Game.crumbs === 7) FunVoice.say("fun-crumb-7", "Семь крошечек. Я почти хлебный детектив.");
+    if (Game.crumbs === 10) FunVoice.say("fun-crumb-last", "Хрю-хрю. Все крошечки задержаны.");
     if (Game.quest === 2 && Game.crumbs >= 10) {
       quest(3);
       Game.q3Timer = 2.7;
@@ -3497,7 +3538,6 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     leashWorld.position.set(5.8, 0.11, -6.55);
     leashWorld.rotation.x = -Math.PI / 2;
     pug.forcedYaw = yawTo(pug.pos.x, pug.pos.z, 5.8, -7);
-    speakMatvey("door", "Открывайте. Специалист по запахам готов.");
     startSequence(
       [
         {
@@ -3528,6 +3568,11 @@ window.MATVEY_BUILD = "rc6.1-camera2";
         pug.forcedYaw = null;
         Game.inputLocked = false;
         quest(6);
+        FunVoice.say(
+          "fun-door-open",
+          "Дверь открыта. Пойду проверю наружную свежесть.",
+          true,
+        );
       },
     );
   }
@@ -3558,7 +3603,6 @@ window.MATVEY_BUILD = "rc6.1-camera2";
   function bedSequence() {
     Game.inputLocked = true;
     quest(8);
-    speakMatvey("dig", "Простыня слишком ровная. Исправляю.", { force: true });
     var sx = pug.pos.x,
       sz = pug.pos.z,
       sy = pug.yaw,
@@ -3569,6 +3613,11 @@ window.MATVEY_BUILD = "rc6.1-camera2";
           duration: 0.8,
           begin: function () {
             setPugState("jump");
+            FunVoice.say(
+              "fun-bed-jump",
+              "Жопохрюк не толстый. Жопохрюк бронированный.",
+              true,
+            );
             AudioManager.playOne("jump", 0.7, 300);
             hapticImpact("soft");
             pug.forcedYaw = yawTo(sx, sz, bedCX, bedCZ);
@@ -3835,6 +3884,15 @@ window.MATVEY_BUILD = "rc6.1-camera2";
         );
         setPugState("walk");
         Game.stepDistance += sp * dt;
+        FunVoice.travel += sp * dt;
+        if (running)
+          FunVoice.say("fun-run", "Хрюкожоп активирован.", true);
+        if (pug.pos.x < -3.25)
+          FunVoice.say(
+            "fun-kitchen-enter",
+            "Пойду на кухню. Вдруг там произошло что-то вкусное.",
+            true,
+          );
         if (Game.stepDistance > 0.5) {
           Game.stepDistance = 0;
           AudioManager.playOne(running ? "stepsRun" : "stepsWalk", 0.42, 120);
@@ -3898,7 +3956,8 @@ window.MATVEY_BUILD = "rc6.1-camera2";
           setMood(Game.mood + 8);
           setHold(null);
           AudioManager.playOne("collect", 0.65, 150);
-          speakMatvey(smell.key, smell.text, { force: true });
+          if (Game.smells >= 3) FunVoice.say("fun-smell-last", "Нос сказал: всё проверено.");
+          else speakMatvey(smell.key, smell.text, { force: true });
           setPugState("idle");
           if (Game.smells >= 3) setQuest("Двор проверен. Возвращайся домой");
         }
@@ -3948,9 +4007,19 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       } else vacuum.pos.copy(temp);
       vacuumRoot.position.copy(vacuum.pos);
       vacuumRoot.rotation.y += dt * 0.8;
-      AudioManager.updateVacuum(
-        Math.sqrt(dist2(vacuum.pos.x, vacuum.pos.z, pug.pos.x, pug.pos.z)),
+      var vacuumDistance = Math.sqrt(
+        dist2(vacuum.pos.x, vacuum.pos.z, pug.pos.x, pug.pos.z),
       );
+      AudioManager.updateVacuum(vacuumDistance);
+      if (!pug.onBed && vacuumDistance < 1) FunVoice.vacuumDanger = true;
+      if (FunVoice.vacuumDanger && vacuumDistance > 1.25) {
+        FunVoice.vacuumDanger = false;
+        FunVoice.say(
+          "fun-vacuum-escape",
+          "Ротопёрд: дыхнул и победил.",
+          true,
+        );
+      }
       if (
         Game.bumpCooldown <= 0 &&
         !pug.onBed &&
@@ -3965,7 +4034,7 @@ window.MATVEY_BUILD = "rc6.1-camera2";
           updateCounters();
         }
         AudioManager.playOne("snort", 0.7, 400);
-        speakMatvey("vacuumHit", "Зафиксировано нападение бытовой техники.");
+        FunVoice.say("fun-vacuum-hit", "Дыхожоп применяет газовую атаку.");
         setPugState("hop");
         startSequence([
           {
@@ -4066,7 +4135,15 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       Game.ambientTimer -= dt;
       if (Game.ambientTimer <= 0) {
         Game.ambientTimer = rand(20, 34);
-        MatveyDialogue.say("idle", { cooldown: 20000 });
+        var idleFun = null;
+        if (FunVoice.travel >= 35 && !FunVoice.used["fun-idle-tired"])
+          idleFun = ["fun-idle-tired", "Хрюкожоп устал. Бой отменяется."];
+        else if (!FunVoice.used["fun-idle-food"])
+          idleFun = ["fun-idle-food", "Я думаю. О еде."];
+        else if (!FunVoice.used["fun-idle-herring"])
+          idleFun = ["fun-idle-herring", "Что-то селёдкой пахнет. Не смотрите на меня."];
+        if (!idleFun || !FunVoice.say(idleFun[0], idleFun[1], true))
+          MatveyDialogue.say("idle", { cooldown: 20000 });
       }
     }
     if (perf) perf.end("scene");
@@ -4103,6 +4180,17 @@ window.MATVEY_BUILD = "rc6.1-camera2";
       hapticImpact("light");
       MatveyDialogue.say("humanNear", { cooldown: 20000 });
     }
+    if (interact2 && interact2.short === "ПРОСИТЬ" && !actionQueued) {
+      FunVoice.humanWait += dt;
+      if (FunVoice.humanWait >= 4) {
+        FunVoice.humanWait = 0;
+        FunVoice.say(
+          "fun-human-wait",
+          "Человек, я уже пришёл. Давайте без лишних ожиданий.",
+          true,
+        );
+      }
+    } else FunVoice.humanWait = 0;
     if (perf) {
       perf.end("hud");
       perf.begin("animation");
@@ -4143,6 +4231,7 @@ window.MATVEY_BUILD = "rc6.1-camera2";
     pendingTimers.length = 0;
     stopVoice();
     AudioManager.stopAll();
+    FunVoice.reset();
     sequence = null;
     resetInput("reset-game");
     Object.assign(Game, {
