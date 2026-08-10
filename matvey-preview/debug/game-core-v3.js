@@ -1,5 +1,5 @@
 "use strict";
-window.MATVEY_BUILD = "rc6.1-texture1";
+window.MATVEY_BUILD = "rc6.1-voicehotfix1";
 (function () {
   if (!window.THREE) {
     window.__fatal(
@@ -254,6 +254,7 @@ window.MATVEY_BUILD = "rc6.1-texture1";
     activeOneShots: [],
     pools: {},
     preparedFirstCrumb: null,
+    preparedVoices: {},
     music: null,
     ambient: null,
     vacuum: null,
@@ -276,10 +277,17 @@ window.MATVEY_BUILD = "rc6.1-texture1";
         this.pools[key] = [];
         for (var i = 0; i < size; i++) this.pools[key].push(this.makePoolItem(ASSET_PATHS[key]));
       }
-      this.preparedFirstCrumb = this.makePoolItem(VOICE_PATHS.firstCrumb);
+      var voiceKeys = [
+        "firstCrumb", "vacuum", "beg", "leash", "door",
+        "dialogue-humanNear-0", "dialogue-humanNear-1", "dialogue-humanNear-2",
+      ];
+      voiceKeys.forEach(function (key) {
+        AudioManager.preparedVoices[key] = AudioManager.makePoolItem(VOICE_PATHS[key]);
+      });
+      this.preparedFirstCrumb = this.preparedVoices.firstCrumb;
       var self = this, queue = [];
       Object.keys(this.pools).forEach(function (key) { self.pools[key].forEach(function (item) { queue.push(item); }); });
-      queue.push(this.preparedFirstCrumb);
+      voiceKeys.forEach(function (key) { queue.push(self.preparedVoices[key]); });
       function warmNext() {
         var item = queue.shift();
         if (!item) return;
@@ -572,21 +580,20 @@ window.MATVEY_BUILD = "rc6.1-texture1";
       var p = a.play();
       if (p && p.catch) p.catch(finish);
     }
-    var firstCrumb = key === "firstCrumb" ? AudioManager.preparedFirstCrumb : null;
-    if (firstCrumb && firstCrumb.ready && !firstCrumb.busy) {
-      firstCrumb.busy = true;
-      playVoice(firstCrumb.audio);
+    var preparedVoice = AudioManager.preparedVoices[key];
+    if (preparedVoice && preparedVoice.ready && !preparedVoice.busy) {
+      preparedVoice.busy = true;
+      playVoice(preparedVoice.audio);
       return;
     }
-    if (firstCrumb) return;
+    if (preparedVoice) return;
+    if (AudioManager.availability[path] === false) return;
     if (options.immediate) {
       playVoice();
       return;
     }
-    AudioManager.probe(path).then(function (ok) {
-      if (!ok) return;
-      playVoice();
-    });
+    /* VOICE_PATHS is the validated manifest: never put a HEAD probe in gameplay. */
+    playVoice();
   }
   var MatveyDialogue = {
     lastAt: -Infinity,
