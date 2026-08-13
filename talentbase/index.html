@@ -17,8 +17,8 @@ html,body{margin:0;min-height:100%;background:#111214;color:#e8eaec;font-family:
     const response=await fetch('./base-v1.html',{cache:'no-store'});
     if(!response.ok) throw new Error('HTTP '+response.status);
     let source=await response.text();
-    source=source.replace('</head>','<link rel="stylesheet" href="./contact-analytics-v2.css"></head>');
-    source=source.replace('</body>','<script src="./contact-analytics-v2.js"><\/script><script src="./mobile-profile-hotfix-v3.js"><\/script></body>');
+    source=source.replace('</head>','<link rel="stylesheet" href="./contact-analytics-v2.css"><link rel="stylesheet" href="./recruiting-core-v1.css?v=recruiting-core-v1"></head>');
+    source=source.replace('</body>','<script src="./contact-analytics-v2.js"><\/script><script src="./recruiting-core-v1.js?v=recruiting-core-v1"><\/script><script src="./mobile-profile-hotfix-v3.js"><\/script></body>');
     document.open();
     document.write(source);
     document.close();
