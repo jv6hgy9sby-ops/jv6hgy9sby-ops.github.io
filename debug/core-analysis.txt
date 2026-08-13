@@ -1,0 +1,682 @@
+Decoded bytes: 91979
+Decoded lines: 1226
+Matched contexts: 97
+
+--- lines 18-22 ---
+18: function nowMs(){return performance&&performance.now?performance.now():Date.now()}
+19: 
+20: var IS_TOUCH=('ontouchstart'in window)||(navigator.maxTouchPoints>0);
+21: if(IS_TOUCH)document.body.classList.add('touch');
+22: 
+
+--- lines 19-23 ---
+19: 
+20: var IS_TOUCH=('ontouchstart'in window)||(navigator.maxTouchPoints>0);
+21: if(IS_TOUCH)document.body.classList.add('touch');
+22: 
+23: var STORAGE={
+
+--- lines 31-35 ---
+31: try{
+32:   var stored=JSON.parse(localStorage.getItem(STORAGE.settings)||'null');
+33:   if(stored&&typeof stored==='object')Object.keys(settings).forEach(function(k){if(typeof stored[k]===typeof settings[k])settings[k]=stored[k]});
+34:   var storedAch=JSON.parse(localStorage.getItem(STORAGE.achievements)||'null');
+35:   if(storedAch&&typeof storedAch==='object')Object.keys(achievements).forEach(function(k){if(typeof storedAch[k]==='boolean')achievements[k]=storedAch[k]});
+
+--- lines 33-37 ---
+33:   if(stored&&typeof stored==='object')Object.keys(settings).forEach(function(k){if(typeof stored[k]===typeof settings[k])settings[k]=stored[k]});
+34:   var storedAch=JSON.parse(localStorage.getItem(STORAGE.achievements)||'null');
+35:   if(storedAch&&typeof storedAch==='object')Object.keys(achievements).forEach(function(k){if(typeof storedAch[k]==='boolean')achievements[k]=storedAch[k]});
+36:   var best=parseFloat(localStorage.getItem(STORAGE.best));if(Number.isFinite(best))bestTime=best;
+37: }catch(error){}
+
+--- lines 94-98 ---
+94:   ambientHome:'assets/audio/ambient/home-room.mp3',
+95:   ambientYard:'assets/audio/ambient/yard-birds.mp3',
+96:   stepsWalk:'assets/audio/sfx/steps-walk.mp3',
+97:   stepsRun:'assets/audio/sfx/steps-run.mp3',
+98:   sniff:'assets/audio/sfx/sniff.mp3',
+
+--- lines 95-99 ---
+95:   ambientYard:'assets/audio/ambient/yard-birds.mp3',
+96:   stepsWalk:'assets/audio/sfx/steps-walk.mp3',
+97:   stepsRun:'assets/audio/sfx/steps-run.mp3',
+98:   sniff:'assets/audio/sfx/sniff.mp3',
+99:   snort:'assets/audio/sfx/snort.mp3',
+
+--- lines 299-303 ---
+299: var screenReturn='start',tgBack=null,portraitBackHidden=false;
+300: function screenOpen(id){return !$(id).classList.contains('hidden')}
+301: function updateBack(){
+302:   if(!tgBack)return;
+303:   try{
+
+--- lines 312-316 ---
+312: }
+313: function setQuest(text){$('quest-text').textContent=text}
+314: function updateCounters(){
+315:   $('crumbs-val').textContent=Game.crumbs+' / 10';
+316:   $('smells-val').textContent=Game.smells+' / 3';
+
+--- lines 382-386 ---
+382: renderer.toneMappingExposure=.66;
+383: renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+384: renderer.domElement.style.touchAction='none';
+385: $('canvas-holder').appendChild(renderer.domElement);
+386: renderer.domElement.addEventListener('webglcontextlost',function(event){event.preventDefault();if(Game&&Game.mode==='playing')pauseGame();window.__fatal('3D-контекст был потерян. Обновите страницу — прогресс достижений сохранён.')},false);
+
+--- lines 587-591 ---
+587:     var g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
+588:     var border=box(w,h,.045,M.woodDark,0,0,0,g,true,false);
+589:     var art=mesh(new THREE.PlaneGeometry(w-.12,h-.12),new THREE.MeshBasicMaterial({color:color}),0,0,wall==='z'?.028:.028,g);art.position.z=.028;
+590:     return g;
+591:   }
+
+--- lines 720-724 ---
+720:       gltf.animations.forEach(function(clip){
+721:         var n=(clip.name||'').toLowerCase(),key='';
+722:         if(/run/.test(n))key='run';else if(/walk/.test(n))key='walk';else if(/sit/.test(n))key='sit';else if(/sniff/.test(n))key='sniff';else if(/dig/.test(n))key='dig';else if(/sleep|lie/.test(n))key='sleep';else if(/idle|stand/.test(n))key='idle';
+723:         if(key&&!actions[key])actions[key]=mixer.clipAction(clip);
+724:       });
+
+--- lines 723-727 ---
+723:         if(key&&!actions[key])actions[key]=mixer.clipAction(clip);
+724:       });
+725:       if(!actions.idle||(!actions.walk&&!actions.run))return;
+726:       var box3=new THREE.Box3().setFromObject(gltf.scene),size=new THREE.Vector3();box3.getSize(size);
+727:       if(!size.y||size.y/Math.max(size.x,size.z)<.55)return;
+
+--- lines 736-740 ---
+736: function setPugState(state){if(pug.state!==state){pug.state=state;pug.stateT=0}}
+737: function glbAnimationKey(){
+738:   if(pug.state==='walk')return pug.move>.72?'run':'walk';
+739:   if(pug.state==='beg'||pug.state==='sit')return'sit';
+740:   if(pug.state==='sniff')return'sniff';
+
+--- lines 741-745 ---
+741:   if(pug.state==='dig'||pug.state==='scratch')return'dig';
+742:   if(pug.state==='sleep'||pug.state==='lie')return'sleep';
+743:   return'idle';
+744: }
+745: function animatePug(dt){
+
+--- lines 743-747 ---
+743:   return'idle';
+744: }
+745: function animatePug(dt){
+746:   pug.stateT+=dt;
+747:   if(glb.active){
+
+--- lines 746-750 ---
+746:   pug.stateT+=dt;
+747:   if(glb.active){
+748:     var action=glb.actions[glbAnimationKey()]||glb.actions.idle;
+749:     if(action&&action!==glb.current){if(glb.current)glb.current.fadeOut(.22);action.reset().fadeIn(.22).play();glb.current=action}
+750:     if(glb.mixer)glb.mixer.update(dt);return;
+
+--- lines 767-771 ---
+767:   pug.blinkT-=dt;if(pug.blinkT<=0){pug.blink=.14;pug.blinkT=rand(2.2,5.2)}
+768:   if(pug.blink>0){pug.blink-=dt;P.eyes.forEach(function(e,index){e.scale.y=pugBase.eyeScales[index].y*.12})}
+769:   var run=clamp((pug.move-.62)/.38,0,1),moving=st==='walk'?clamp(pug.move,.16,1):0;
+770:   pug.settle=lerp(pug.settle,moving,clamp(dt*6,0,1));
+771:   if(st==='walk'||st==='idle'){
+
+--- lines 769-773 ---
+769:   var run=clamp((pug.move-.62)/.38,0,1),moving=st==='walk'?clamp(pug.move,.16,1):0;
+770:   pug.settle=lerp(pug.settle,moving,clamp(dt*6,0,1));
+771:   if(st==='walk'||st==='idle'){
+772:     var amp=lerp(.48,.67,run)*moving,step=Math.sin(phase),step2=Math.sin(phase+Math.PI);
+773:     P.legFL.rotation.x=step*amp;P.legRR.rotation.x=step*amp;P.legFR.rotation.x=step2*amp;P.legRL.rotation.x=step2*amp;
+
+--- lines 770-774 ---
+770:   pug.settle=lerp(pug.settle,moving,clamp(dt*6,0,1));
+771:   if(st==='walk'||st==='idle'){
+772:     var amp=lerp(.48,.67,run)*moving,step=Math.sin(phase),step2=Math.sin(phase+Math.PI);
+773:     P.legFL.rotation.x=step*amp;P.legRR.rotation.x=step*amp;P.legFR.rotation.x=step2*amp;P.legRL.rotation.x=step2*amp;
+774:     proceduralPug.position.y=Math.abs(step)*lerp(.018,.036,run)*moving;
+
+--- lines 772-776 ---
+772:     var amp=lerp(.48,.67,run)*moving,step=Math.sin(phase),step2=Math.sin(phase+Math.PI);
+773:     P.legFL.rotation.x=step*amp;P.legRR.rotation.x=step*amp;P.legFR.rotation.x=step2*amp;P.legRL.rotation.x=step2*amp;
+774:     proceduralPug.position.y=Math.abs(step)*lerp(.018,.036,run)*moving;
+775:     proceduralPug.rotation.z=step*lerp(.055,.105,run)*moving;
+776:     P.rear.position.x=step*.032*moving;P.rear.rotation.z=step*.065*moving;
+
+--- lines 773-777 ---
+773:     P.legFL.rotation.x=step*amp;P.legRR.rotation.x=step*amp;P.legFR.rotation.x=step2*amp;P.legRL.rotation.x=step2*amp;
+774:     proceduralPug.position.y=Math.abs(step)*lerp(.018,.036,run)*moving;
+775:     proceduralPug.rotation.z=step*lerp(.055,.105,run)*moving;
+776:     P.rear.position.x=step*.032*moving;P.rear.rotation.z=step*.065*moving;
+777:     P.body.rotation.z=step*.035*moving;P.chest.rotation.z=-step*.026*moving;
+
+--- lines 774-778 ---
+774:     proceduralPug.position.y=Math.abs(step)*lerp(.018,.036,run)*moving;
+775:     proceduralPug.rotation.z=step*lerp(.055,.105,run)*moving;
+776:     P.rear.position.x=step*.032*moving;P.rear.rotation.z=step*.065*moving;
+777:     P.body.rotation.z=step*.035*moving;P.chest.rotation.z=-step*.026*moving;
+778:     P.haunchL.position.y=pugBase.haunchL.y+Math.max(0,step)*.012*moving;P.haunchR.position.y=pugBase.haunchR.y+Math.max(0,-step)*.012*moving;
+
+--- lines 777-781 ---
+777:     P.body.rotation.z=step*.035*moving;P.chest.rotation.z=-step*.026*moving;
+778:     P.haunchL.position.y=pugBase.haunchL.y+Math.max(0,step)*.012*moving;P.haunchR.position.y=pugBase.haunchR.y+Math.max(0,-step)*.012*moving;
+779:     P.ears[0].rotation.x=.52+Math.abs(step)*lerp(.025,.18,run)*moving;P.ears[1].rotation.x=.52+Math.abs(step2)*lerp(.025,.18,run)*moving;
+780:     pug.lookT-=dt;if(pug.lookT<=0){pug.lookTarget=rand(-.5,.5);pug.lookT=rand(2.6,5.6)}
+781:     pug.look=lerp(pug.look,pug.lookTarget,dt*2.4);if(!talking){P.head.rotation.y=pug.look;P.head.rotation.z=-step*.026*moving+Math.sin(t*.7)*.015*(1-moving)}
+
+--- lines 781-785 ---
+781:     pug.look=lerp(pug.look,pug.lookTarget,dt*2.4);if(!talking){P.head.rotation.y=pug.look;P.head.rotation.z=-step*.026*moving+Math.sin(t*.7)*.015*(1-moving)}
+782:     pug.lickT-=dt;if(pug.lickT<=0){pug.lick=.68;pug.lickT=rand(8,15)}
+783:     if(pug.lick>0||run>.82){pug.lick-=dt;P.tongue.visible=true;P.tongue.position.y=-.154+Math.sin(t*11)*.008;P.jaw.rotation.x=Math.min(P.jaw.rotation.x,-.12-run*.08)}
+784:     var breathe=1+Math.sin(t*(run?3.2:1.75))*.014;
+785:     P.body.scale.y=pugBase.bodyScale.y*breathe;P.chest.scale.y=pugBase.chestScale.y*(1+(breathe-1)*1.2);P.belly.scale.y=pugBase.bellyScale.y*(1+(breathe-1)*1.35);
+
+--- lines 782-786 ---
+782:     pug.lickT-=dt;if(pug.lickT<=0){pug.lick=.68;pug.lickT=rand(8,15)}
+783:     if(pug.lick>0||run>.82){pug.lick-=dt;P.tongue.visible=true;P.tongue.position.y=-.154+Math.sin(t*11)*.008;P.jaw.rotation.x=Math.min(P.jaw.rotation.x,-.12-run*.08)}
+784:     var breathe=1+Math.sin(t*(run?3.2:1.75))*.014;
+785:     P.body.scale.y=pugBase.bodyScale.y*breathe;P.chest.scale.y=pugBase.chestScale.y*(1+(breathe-1)*1.2);P.belly.scale.y=pugBase.bellyScale.y*(1+(breathe-1)*1.35);
+786:     if(st==='idle'&&!talking){proceduralPug.position.x=Math.sin(t*.65)*.006;P.head.rotation.x=Math.sin(t*.82)*.018;P.head.rotation.z+=Math.sin(t*.43)*.025}
+
+--- lines 784-788 ---
+784:     var breathe=1+Math.sin(t*(run?3.2:1.75))*.014;
+785:     P.body.scale.y=pugBase.bodyScale.y*breathe;P.chest.scale.y=pugBase.chestScale.y*(1+(breathe-1)*1.2);P.belly.scale.y=pugBase.bellyScale.y*(1+(breathe-1)*1.35);
+786:     if(st==='idle'&&!talking){proceduralPug.position.x=Math.sin(t*.65)*.006;P.head.rotation.x=Math.sin(t*.82)*.018;P.head.rotation.z+=Math.sin(t*.43)*.025}
+787:   }else if(st==='sit'||st==='beg'){
+788:     proceduralPug.rotation.x=-.31;proceduralPug.position.y=.045;P.rear.position.y=.27;P.belly.position.y=.16;
+
+--- lines 794-798 ---
+794:     proceduralPug.position.y=-.025;P.head.position.set(0,.5,.44);P.head.rotation.x=.56;var nosePulse=1+Math.sin(t*20)*.12;P.nose.scale.copy(pugBase.noseScale).multiplyScalar(nosePulse);proceduralPug.rotation.z=Math.sin(t*5)*.018;P.shoulderL.rotation.x=.08;P.shoulderR.rotation.x=.08;
+795:   }else if(st==='dig'){
+796:     proceduralPug.position.y=-.035;proceduralPug.rotation.x=.08;P.head.position.y=.51;P.head.rotation.x=.43;P.legFL.rotation.x=-.32+Math.sin(t*17)*.82;P.legFR.rotation.x=-.32+Math.sin(t*17+Math.PI)*.82;P.chest.rotation.z=Math.sin(t*17)*.045;P.body.position.z=pugBase.bodyPos.z+Math.sin(t*8)*.009;pugShadow.scale.set(.98,.86,1);
+797:   }else if(st==='spin'){
+798:     P.legFL.rotation.x=Math.sin(t*10)*.54;P.legRR.rotation.x=Math.sin(t*10)*.54;P.legFR.rotation.x=Math.sin(t*10+Math.PI)*.54;P.legRL.rotation.x=Math.sin(t*10+Math.PI)*.54;proceduralPug.position.y=Math.abs(Math.sin(t*10))*.022;
+
+--- lines 858-862 ---
+858: var particles=[];for(var pi=0;pi<42;pi++){var pm=mesh(new THREE.TetrahedronGeometry(.045),new THREE.MeshBasicMaterial({color:0xffcf6b}),0,0,0);pm.visible=false;particles.push({mesh:pm,vel:new THREE.Vector3(),life:0})}
+859: function burst(x,y,z){var n=0;for(var i=0;i<particles.length&&n<8;i++){var p=particles[i];if(p.life<=0){p.mesh.visible=true;p.mesh.position.set(x,y,z);p.vel.set(rand(-1,1),rand(1.3,2.6),rand(-1,1));p.life=.65;n++}}}
+860: function updateParticles(dt){particles.forEach(function(p){if(p.life>0){p.life-=dt*1.5;p.vel.y-=4.8*dt;p.mesh.position.addScaledVector(p.vel,dt);var s=Math.max(.01,p.life/.65);p.mesh.scale.setScalar(s);p.mesh.rotation.x+=dt*7;p.mesh.rotation.y+=dt*5;if(p.life<=0)p.mesh.visible=false}})}
+861: 
+862: /* Camera */
+
+--- lines 871-875 ---
+871:   return 4.45;
+872: }
+873: function updateCamera(dt){
+874:   var k=1-Math.exp(-dt*(settings.calm?2.15:5.4));
+875:   var talkZoom=voiceState.speaking&&pug.move<.18&&!Game.sleeping?.24:0;
+
+--- lines 891-895 ---
+891: 
+892: /* Input */
+893: var keys={},actionQueued=false,actionHeld=false,touchRun=false;
+894: var joystick={active:false,id:null,cx:0,cy:0,x:0,y:0},cameraTouch={id:null,x:0,y:0},mouse={down:false,x:0};
+895: var knob=$('joystick-knob');
+
+--- lines 892-896 ---
+892: /* Input */
+893: var keys={},actionQueued=false,actionHeld=false,touchRun=false;
+894: var joystick={active:false,id:null,cx:0,cy:0,x:0,y:0},cameraTouch={id:null,x:0,y:0},mouse={down:false,x:0};
+895: var knob=$('joystick-knob');
+896: function resetInput(){
+
+--- lines 893-897 ---
+893: var keys={},actionQueued=false,actionHeld=false,touchRun=false;
+894: var joystick={active:false,id:null,cx:0,cy:0,x:0,y:0},cameraTouch={id:null,x:0,y:0},mouse={down:false,x:0};
+895: var knob=$('joystick-knob');
+896: function resetInput(){
+897:   keys={};actionQueued=false;actionHeld=false;touchRun=false;joystick.active=false;joystick.id=null;joystick.x=0;joystick.y=0;cameraTouch.id=null;mouse.down=false;knob.style.transform='translate(0,0)';$('btn-run').classList.remove('active');pug.vel.set(0,0,0);pug.move=0;
+
+--- lines 895-899 ---
+895: var knob=$('joystick-knob');
+896: function resetInput(){
+897:   keys={};actionQueued=false;actionHeld=false;touchRun=false;joystick.active=false;joystick.id=null;joystick.x=0;joystick.y=0;cameraTouch.id=null;mouse.down=false;knob.style.transform='translate(0,0)';$('btn-run').classList.remove('active');pug.vel.set(0,0,0);pug.move=0;
+898: }
+899: window.addEventListener('keydown',function(e){
+
+--- lines 897-901 ---
+897:   keys={};actionQueued=false;actionHeld=false;touchRun=false;joystick.active=false;joystick.id=null;joystick.x=0;joystick.y=0;cameraTouch.id=null;mouse.down=false;knob.style.transform='translate(0,0)';$('btn-run').classList.remove('active');pug.vel.set(0,0,0);pug.move=0;
+898: }
+899: window.addEventListener('keydown',function(e){
+900:   var c=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(c)>=0)e.preventDefault();
+901:   if(keys[c])return;keys[c]=true;
+
+--- lines 898-902 ---
+898: }
+899: window.addEventListener('keydown',function(e){
+900:   var c=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(c)>=0)e.preventDefault();
+901:   if(keys[c])return;keys[c]=true;
+902:   if(c==='KeyE'||c==='Space'){actionQueued=true;actionHeld=true}
+
+--- lines 899-903 ---
+899: window.addEventListener('keydown',function(e){
+900:   var c=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(c)>=0)e.preventDefault();
+901:   if(keys[c])return;keys[c]=true;
+902:   if(c==='KeyE'||c==='Space'){actionQueued=true;actionHeld=true}
+903:   if(c==='KeyM'){if(settings.sound){settings.sound=false;AudioManager.pauseAll();stopVoice();saveSettings();syncSettings()}else enableSoundFromGesture(true)}
+
+--- lines 902-906 ---
+902:   if(c==='KeyE'||c==='Space'){actionQueued=true;actionHeld=true}
+903:   if(c==='KeyM'){if(settings.sound){settings.sound=false;AudioManager.pauseAll();stopVoice();saveSettings();syncSettings()}else enableSoundFromGesture(true)}
+904:   if(c==='Escape'&&Game.mode==='playing'){if(Game.paused)resumeGame();else pauseGame()}
+905:   if(Game.mode==='finale')Game.erzIdle=0;
+906: });
+
+--- lines 903-907 ---
+903:   if(c==='KeyM'){if(settings.sound){settings.sound=false;AudioManager.pauseAll();stopVoice();saveSettings();syncSettings()}else enableSoundFromGesture(true)}
+904:   if(c==='Escape'&&Game.mode==='playing'){if(Game.paused)resumeGame();else pauseGame()}
+905:   if(Game.mode==='finale')Game.erzIdle=0;
+906: });
+907: window.addEventListener('keyup',function(e){keys[e.code]=false;if(e.code==='KeyE'||e.code==='Space')actionHeld=false});
+
+--- lines 905-909 ---
+905:   if(Game.mode==='finale')Game.erzIdle=0;
+906: });
+907: window.addEventListener('keyup',function(e){keys[e.code]=false;if(e.code==='KeyE'||e.code==='Space')actionHeld=false});
+908: renderer.domElement.addEventListener('mousedown',function(e){mouse.down=true;mouse.x=e.clientX});
+909: window.addEventListener('mousemove',function(e){if(!mouse.down)return;var dx=e.clientX-mouse.x;mouse.x=e.clientX;cam.yaw-=dx*.0032*settings.sens});
+
+--- lines 910-914 ---
+910: window.addEventListener('mouseup',function(){mouse.down=false});
+911: renderer.domElement.addEventListener('contextmenu',function(e){e.preventDefault()});
+912: if(IS_TOUCH){
+913:   renderer.domElement.addEventListener('touchstart',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(cameraTouch.id===null){cameraTouch.id=t.identifier;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY}}},{passive:false});
+914:   renderer.domElement.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===cameraTouch.id){var dx=t.clientX-cameraTouch.x;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY;cam.yaw-=dx*.0043*settings.sens}}},{passive:false});
+
+--- lines 911-915 ---
+911: renderer.domElement.addEventListener('contextmenu',function(e){e.preventDefault()});
+912: if(IS_TOUCH){
+913:   renderer.domElement.addEventListener('touchstart',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(cameraTouch.id===null){cameraTouch.id=t.identifier;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY}}},{passive:false});
+914:   renderer.domElement.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===cameraTouch.id){var dx=t.clientX-cameraTouch.x;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY;cam.yaw-=dx*.0043*settings.sens}}},{passive:false});
+915:   var endCamera=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===cameraTouch.id)cameraTouch.id=null};
+
+--- lines 912-916 ---
+912: if(IS_TOUCH){
+913:   renderer.domElement.addEventListener('touchstart',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(cameraTouch.id===null){cameraTouch.id=t.identifier;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY}}},{passive:false});
+914:   renderer.domElement.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===cameraTouch.id){var dx=t.clientX-cameraTouch.x;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY;cam.yaw-=dx*.0043*settings.sens}}},{passive:false});
+915:   var endCamera=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===cameraTouch.id)cameraTouch.id=null};
+916:   renderer.domElement.addEventListener('touchend',endCamera);renderer.domElement.addEventListener('touchcancel',endCamera);
+
+--- lines 913-917 ---
+913:   renderer.domElement.addEventListener('touchstart',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(cameraTouch.id===null){cameraTouch.id=t.identifier;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY}}},{passive:false});
+914:   renderer.domElement.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===cameraTouch.id){var dx=t.clientX-cameraTouch.x;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY;cam.yaw-=dx*.0043*settings.sens}}},{passive:false});
+915:   var endCamera=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===cameraTouch.id)cameraTouch.id=null};
+916:   renderer.domElement.addEventListener('touchend',endCamera);renderer.domElement.addEventListener('touchcancel',endCamera);
+917:   var zone=$('joystick-zone'),base=$('joystick-base');
+
+--- lines 914-918 ---
+914:   renderer.domElement.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===cameraTouch.id){var dx=t.clientX-cameraTouch.x;cameraTouch.x=t.clientX;cameraTouch.y=t.clientY;cam.yaw-=dx*.0043*settings.sens}}},{passive:false});
+915:   var endCamera=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===cameraTouch.id)cameraTouch.id=null};
+916:   renderer.domElement.addEventListener('touchend',endCamera);renderer.domElement.addEventListener('touchcancel',endCamera);
+917:   var zone=$('joystick-zone'),base=$('joystick-base');
+918:   zone.addEventListener('touchstart',function(e){e.preventDefault();if(joystick.active)return;var t=e.changedTouches[0],r=base.getBoundingClientRect();joystick.active=true;joystick.id=t.identifier;joystick.cx=r.left+r.width/2;joystick.cy=r.top+r.height/2;moveJoy(t.clientX,t.clientY)},{passive:false});
+
+--- lines 915-919 ---
+915:   var endCamera=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===cameraTouch.id)cameraTouch.id=null};
+916:   renderer.domElement.addEventListener('touchend',endCamera);renderer.domElement.addEventListener('touchcancel',endCamera);
+917:   var zone=$('joystick-zone'),base=$('joystick-base');
+918:   zone.addEventListener('touchstart',function(e){e.preventDefault();if(joystick.active)return;var t=e.changedTouches[0],r=base.getBoundingClientRect();joystick.active=true;joystick.id=t.identifier;joystick.cx=r.left+r.width/2;joystick.cy=r.top+r.height/2;moveJoy(t.clientX,t.clientY)},{passive:false});
+919:   zone.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===joystick.id)moveJoy(t.clientX,t.clientY)}},{passive:false});
+
+--- lines 916-920 ---
+916:   renderer.domElement.addEventListener('touchend',endCamera);renderer.domElement.addEventListener('touchcancel',endCamera);
+917:   var zone=$('joystick-zone'),base=$('joystick-base');
+918:   zone.addEventListener('touchstart',function(e){e.preventDefault();if(joystick.active)return;var t=e.changedTouches[0],r=base.getBoundingClientRect();joystick.active=true;joystick.id=t.identifier;joystick.cx=r.left+r.width/2;joystick.cy=r.top+r.height/2;moveJoy(t.clientX,t.clientY)},{passive:false});
+919:   zone.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===joystick.id)moveJoy(t.clientX,t.clientY)}},{passive:false});
+920:   function moveJoy(x,y){var dx=x-joystick.cx,dy=y-joystick.cy,l=Math.sqrt(dx*dx+dy*dy)||1,max=39,c=Math.min(l,max);joystick.x=dx/l*c/max;joystick.y=dy/l*c/max;knob.style.transform='translate('+(dx/l*c)+'px,'+(dy/l*c)+'px)'}
+
+--- lines 917-921 ---
+917:   var zone=$('joystick-zone'),base=$('joystick-base');
+918:   zone.addEventListener('touchstart',function(e){e.preventDefault();if(joystick.active)return;var t=e.changedTouches[0],r=base.getBoundingClientRect();joystick.active=true;joystick.id=t.identifier;joystick.cx=r.left+r.width/2;joystick.cy=r.top+r.height/2;moveJoy(t.clientX,t.clientY)},{passive:false});
+919:   zone.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===joystick.id)moveJoy(t.clientX,t.clientY)}},{passive:false});
+920:   function moveJoy(x,y){var dx=x-joystick.cx,dy=y-joystick.cy,l=Math.sqrt(dx*dx+dy*dy)||1,max=39,c=Math.min(l,max);joystick.x=dx/l*c/max;joystick.y=dy/l*c/max;knob.style.transform='translate('+(dx/l*c)+'px,'+(dy/l*c)+'px)'}
+921:   var endJoy=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===joystick.id){joystick.active=false;joystick.id=null;joystick.x=joystick.y=0;knob.style.transform='translate(0,0)'}};
+
+--- lines 918-922 ---
+918:   zone.addEventListener('touchstart',function(e){e.preventDefault();if(joystick.active)return;var t=e.changedTouches[0],r=base.getBoundingClientRect();joystick.active=true;joystick.id=t.identifier;joystick.cx=r.left+r.width/2;joystick.cy=r.top+r.height/2;moveJoy(t.clientX,t.clientY)},{passive:false});
+919:   zone.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===joystick.id)moveJoy(t.clientX,t.clientY)}},{passive:false});
+920:   function moveJoy(x,y){var dx=x-joystick.cx,dy=y-joystick.cy,l=Math.sqrt(dx*dx+dy*dy)||1,max=39,c=Math.min(l,max);joystick.x=dx/l*c/max;joystick.y=dy/l*c/max;knob.style.transform='translate('+(dx/l*c)+'px,'+(dy/l*c)+'px)'}
+921:   var endJoy=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===joystick.id){joystick.active=false;joystick.id=null;joystick.x=joystick.y=0;knob.style.transform='translate(0,0)'}};
+922:   zone.addEventListener('touchend',endJoy);zone.addEventListener('touchcancel',endJoy);
+
+--- lines 919-923 ---
+919:   zone.addEventListener('touchmove',function(e){e.preventDefault();for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i];if(t.identifier===joystick.id)moveJoy(t.clientX,t.clientY)}},{passive:false});
+920:   function moveJoy(x,y){var dx=x-joystick.cx,dy=y-joystick.cy,l=Math.sqrt(dx*dx+dy*dy)||1,max=39,c=Math.min(l,max);joystick.x=dx/l*c/max;joystick.y=dy/l*c/max;knob.style.transform='translate('+(dx/l*c)+'px,'+(dy/l*c)+'px)'}
+921:   var endJoy=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===joystick.id){joystick.active=false;joystick.id=null;joystick.x=joystick.y=0;knob.style.transform='translate(0,0)'}};
+922:   zone.addEventListener('touchend',endJoy);zone.addEventListener('touchcancel',endJoy);
+923:   $('btn-action').addEventListener('touchstart',function(e){e.preventDefault();actionQueued=true;actionHeld=true},{passive:false});
+
+--- lines 920-924 ---
+920:   function moveJoy(x,y){var dx=x-joystick.cx,dy=y-joystick.cy,l=Math.sqrt(dx*dx+dy*dy)||1,max=39,c=Math.min(l,max);joystick.x=dx/l*c/max;joystick.y=dy/l*c/max;knob.style.transform='translate('+(dx/l*c)+'px,'+(dy/l*c)+'px)'}
+921:   var endJoy=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===joystick.id){joystick.active=false;joystick.id=null;joystick.x=joystick.y=0;knob.style.transform='translate(0,0)'}};
+922:   zone.addEventListener('touchend',endJoy);zone.addEventListener('touchcancel',endJoy);
+923:   $('btn-action').addEventListener('touchstart',function(e){e.preventDefault();actionQueued=true;actionHeld=true},{passive:false});
+924:   $('btn-action').addEventListener('touchend',function(e){e.preventDefault();actionHeld=false},{passive:false});
+
+--- lines 921-925 ---
+921:   var endJoy=function(e){for(var i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===joystick.id){joystick.active=false;joystick.id=null;joystick.x=joystick.y=0;knob.style.transform='translate(0,0)'}};
+922:   zone.addEventListener('touchend',endJoy);zone.addEventListener('touchcancel',endJoy);
+923:   $('btn-action').addEventListener('touchstart',function(e){e.preventDefault();actionQueued=true;actionHeld=true},{passive:false});
+924:   $('btn-action').addEventListener('touchend',function(e){e.preventDefault();actionHeld=false},{passive:false});
+925:   $('btn-action').addEventListener('touchcancel',function(){actionHeld=false});
+
+--- lines 922-926 ---
+922:   zone.addEventListener('touchend',endJoy);zone.addEventListener('touchcancel',endJoy);
+923:   $('btn-action').addEventListener('touchstart',function(e){e.preventDefault();actionQueued=true;actionHeld=true},{passive:false});
+924:   $('btn-action').addEventListener('touchend',function(e){e.preventDefault();actionHeld=false},{passive:false});
+925:   $('btn-action').addEventListener('touchcancel',function(){actionHeld=false});
+926:   $('btn-run').addEventListener('touchstart',function(e){e.preventDefault();touchRun=true;this.classList.add('active')},{passive:false});
+
+--- lines 923-927 ---
+923:   $('btn-action').addEventListener('touchstart',function(e){e.preventDefault();actionQueued=true;actionHeld=true},{passive:false});
+924:   $('btn-action').addEventListener('touchend',function(e){e.preventDefault();actionHeld=false},{passive:false});
+925:   $('btn-action').addEventListener('touchcancel',function(){actionHeld=false});
+926:   $('btn-run').addEventListener('touchstart',function(e){e.preventDefault();touchRun=true;this.classList.add('active')},{passive:false});
+927:   $('btn-run').addEventListener('touchend',function(e){e.preventDefault();touchRun=false;this.classList.remove('active')},{passive:false});
+
+--- lines 924-928 ---
+924:   $('btn-action').addEventListener('touchend',function(e){e.preventDefault();actionHeld=false},{passive:false});
+925:   $('btn-action').addEventListener('touchcancel',function(){actionHeld=false});
+926:   $('btn-run').addEventListener('touchstart',function(e){e.preventDefault();touchRun=true;this.classList.add('active')},{passive:false});
+927:   $('btn-run').addEventListener('touchend',function(e){e.preventDefault();touchRun=false;this.classList.remove('active')},{passive:false});
+928:   $('btn-run').addEventListener('touchcancel',function(){touchRun=false;this.classList.remove('active')});
+
+--- lines 925-929 ---
+925:   $('btn-action').addEventListener('touchcancel',function(){actionHeld=false});
+926:   $('btn-run').addEventListener('touchstart',function(e){e.preventDefault();touchRun=true;this.classList.add('active')},{passive:false});
+927:   $('btn-run').addEventListener('touchend',function(e){e.preventDefault();touchRun=false;this.classList.remove('active')},{passive:false});
+928:   $('btn-run').addEventListener('touchcancel',function(){touchRun=false;this.classList.remove('active')});
+929: }
+
+--- lines 926-930 ---
+926:   $('btn-run').addEventListener('touchstart',function(e){e.preventDefault();touchRun=true;this.classList.add('active')},{passive:false});
+927:   $('btn-run').addEventListener('touchend',function(e){e.preventDefault();touchRun=false;this.classList.remove('active')},{passive:false});
+928:   $('btn-run').addEventListener('touchcancel',function(){touchRun=false;this.classList.remove('active')});
+929: }
+930: function inputVector(){
+
+--- lines 929-933 ---
+929: }
+930: function inputVector(){
+931:   var x=0,z=0;if(keys.KeyW||keys.ArrowUp)z++;if(keys.KeyS||keys.ArrowDown)z--;if(keys.KeyA||keys.ArrowLeft)x--;if(keys.KeyD||keys.ArrowRight)x++;if(joystick.active){x+=joystick.x;z-=joystick.y}
+932:   var l=Math.sqrt(x*x+z*z);if(l>1){x/=l;z/=l}return{x:x,z:z,mag:Math.min(1,l)};
+933: }
+
+--- lines 935-939 ---
+935: /* Game */
+936: var Game={
+937:   mode:'menu',paused:false,inputLocked:true,quest:0,crumbs:0,smells:0,mood:40,time:0,finalTime:0,vacuumHits:0,bedAttempts:0,
+938:   hasLeash:false,leashPicked:false,leashDropped:false,tokenFound:false,doorSequence:false,frontOpen:false,bedroomOpen:false,
+939:   looking:false,sleeping:false,finished:false,sleepT:0,snoreT:0,erzIdle:0,erzUnlocked:false,vacuumActive:false,q3Timer:0,
+
+--- lines 937-941 ---
+937:   mode:'menu',paused:false,inputLocked:true,quest:0,crumbs:0,smells:0,mood:40,time:0,finalTime:0,vacuumHits:0,bedAttempts:0,
+938:   hasLeash:false,leashPicked:false,leashDropped:false,tokenFound:false,doorSequence:false,frontOpen:false,bedroomOpen:false,
+939:   looking:false,sleeping:false,finished:false,sleepT:0,snoreT:0,erzIdle:0,erzUnlocked:false,vacuumActive:false,q3Timer:0,
+940:   ambientTimer:20,stepDistance:0,bumpCooldown:0,q7Triggered:false,area:'home'
+941: };
+
+--- lines 940-944 ---
+940:   ambientTimer:20,stepDistance:0,bumpCooldown:0,q7Triggered:false,area:'home'
+941: };
+942: var sequence=null,pausedByOrientation=false,lastFrame=nowMs(),pendingTimers=[];
+943: function timer(fn,ms){var id=setTimeout(function(){var i=pendingTimers.indexOf(id);if(i>=0)pendingTimers.splice(i,1);fn()},ms);pendingTimers.push(id);return id}
+944: function startSequence(steps,done){sequence={steps:steps,index:0,time:0,done:done}}
+
+--- lines 943-947 ---
+943: function timer(fn,ms){var id=setTimeout(function(){var i=pendingTimers.indexOf(id);if(i>=0)pendingTimers.splice(i,1);fn()},ms);pendingTimers.push(id);return id}
+944: function startSequence(steps,done){sequence={steps:steps,index:0,time:0,done:done}}
+945: function updateSequence(dt){
+946:   if(!sequence)return false;var step=sequence.steps[sequence.index];
+947:   if(sequence.time===0&&step.begin)step.begin();sequence.time+=dt;var p=clamp(sequence.time/step.duration,0,1);if(step.tick)step.tick(p,dt);
+
+--- lines 981-985 ---
+981: }
+982: function begSequence(){
+983:   Game.inputLocked=true;pug.forcedYaw=yawTo(pug.pos.x,pug.pos.z,humanRoot.position.x,humanRoot.position.z);
+984:   speakMatvey('beg','Я не попрошайничаю. Я провожу переговоры.');
+985:   startSequence([
+
+--- lines 986-990 ---
+986:     {duration:.42,begin:function(){setPugState('sit')}},
+987:     {duration:1.25,begin:function(){setPugState('beg');AudioManager.playOne('whine',.48,500)}},
+988:     {duration:1.05,begin:function(){treat.visible=true;treat.position.set(humanRoot.position.x,1,humanRoot.position.z)},tick:function(k){treat.position.set(lerp(humanRoot.position.x,pug.pos.x,k),1+Math.sin(k*Math.PI)*.3,lerp(humanRoot.position.z,pug.pos.z,k))},end:function(){treat.visible=false;setMood(Game.mood+15);AudioManager.playOne('collect',.5,100)}},
+989:     {duration:.45}
+990:   ],function(){pug.forcedYaw=null;Game.inputLocked=false;quest(5);speakMatvey('leash','Поводок сам себя не принесёт. Я проверял.')});
+
+--- lines 995-999 ---
+995:   startSequence([
+996:     {duration:1.6,begin:function(){setPugState('scratch');AudioManager.playOne('dig',.65,400)}},
+997:     {duration:1.1,begin:function(){setPugState('idle')}},
+998:     {duration:1,begin:function(){doors.front.target=1;Game.frontOpen=true;removeCollider(frontDoorCollider);AudioManager.playOne('door',.7,500);setMood(Game.mood+8)}}
+999:   ],function(){pug.forcedYaw=null;Game.inputLocked=false;quest(6)});
+
+--- lines 1003-1007 ---
+1003:   if(Game.looking){
+1004:     AudioManager.playOne('snort',.6,400);hapticNotify('warning');speakMatvey('bedWatched','Так. Свидетель ещё не отвернулся.');
+1005:     setPugState('hop');startSequence([{duration:.5,tick:function(k){pug.visualY=Math.sin(k*Math.PI)*.28},end:function(){pug.visualY=0;setPugState('idle')}}]);return;
+1006:   }
+1007:   bedSequence();
+
+--- lines 1021-1025 ---
+1021:   var p=pug.pos,best=null,bd=Infinity;
+1022:   function consider(x,z,r,label,short,fn){var d=Math.sqrt(dist2(p.x,p.z,x,z));if(d<r&&d<bd){bd=d;best={label:label,short:short,fn:fn}}}
+1023:   if(Game.quest===4)consider(humanRoot.position.x,humanRoot.position.z,1.5,'Сесть и начать переговоры','ПРОСИТЬ',begSequence);
+1024:   if(Game.quest===5&&!Game.leashPicked)consider(9.45,-4.3,1.3,'Взять поводок','ВЗЯТЬ',function(){Game.leashPicked=true;Game.hasLeash=true;leashWorld.visible=false;P.leashCarry.visible=true;AudioManager.playOne('collect',.55,200);setMood(Game.mood+8);setQuest('Отнеси поводок к входной двери')});
+1025:   if(Game.quest===5&&Game.hasLeash&&!Game.doorSequence)consider(5.8,-6.5,1.6,'Положить поводок у двери','ГУЛЯТЬ',function(){Game.doorSequence=true;doorSequence()});
+
+--- lines 1038-1042 ---
+1038:   'Я устал. Хотя ещё ничего не делал.','Люди снова не понимают очевидных вещей.','Ситуация под контролем.','Прошу не мешать специалисту.','Работа тяжёлая. Зарплата отсутствует.','Мне нужен перекус для продолжения расследования.','Вопросы есть? У меня тоже нет.'
+1039: ];
+1040: function updateArrow(){
+1041:   var target=null;
+1042:   if(Game.quest===1)target={x:-3,y:1.8,z:0};
+
+--- lines 1042-1046 ---
+1042:   if(Game.quest===1)target={x:-3,y:1.8,z:0};
+1043:   else if(Game.quest===2){var nearest=null,best=Infinity;crumbs.forEach(function(c){if(!c.taken){var d=dist2(pug.pos.x,pug.pos.z,c.x,c.z);if(d<best){best=d;nearest=c}}});if(nearest)target={x:nearest.x,y:1,z:nearest.z}}
+1044:   else if(Game.quest===4)target={x:humanRoot.position.x,y:2.2,z:humanRoot.position.z};
+1045:   else if(Game.quest===5)target=Game.leashPicked?{x:5.8,y:1.8,z:-6.5}:{x:9.45,y:1.8,z:-4.3};
+1046:   else if(Game.quest===6){if(Game.smells>=3)target={x:5.8,y:1.8,z:-6.6};else{var ns=smellPoints.find(function(s){return!s.done});if(ns)target={x:ns.x,y:1,z:ns.z}}}
+
+--- lines 1048-1052 ---
+1048:   arrow.visible=Boolean(target);if(target)arrow.position.set(target.x,target.y+Math.sin(arrowTime*3)*.12,target.z);
+1049: }
+1050: function updatePlaying(dt){
+1051:   Game.time+=dt;Game.bumpCooldown-=dt;var inSequence=updateSequence(dt);
+1052:   var area=pug.pos.z<-7?'yard':'home';if(area!==Game.area){Game.area=area;AudioManager.setArea(area)}
+
+--- lines 1052-1056 ---
+1052:   var area=pug.pos.z<-7?'yard':'home';if(area!==Game.area){Game.area=area;AudioManager.setArea(area)}
+1053:   if(!inSequence&&!Game.inputLocked&&!Game.sleeping){
+1054:     var input=inputVector(),running=keys.ShiftLeft||keys.ShiftRight||touchRun,speed=running?3.35:1.85;
+1055:     var fx=Math.sin(cam.yaw),fz=Math.cos(cam.yaw),rx=-fz,rz=fx,mx=fx*input.z+rx*input.x,mz=fz*input.z+rz*input.x;
+1056:     pug.vel.x=lerp(pug.vel.x,mx*speed*input.mag,clamp(dt*12,0,1));pug.vel.z=lerp(pug.vel.z,mz*speed*input.mag,clamp(dt*12,0,1));
+
+--- lines 1057-1061 ---
+1057:     var sp=Math.sqrt(pug.vel.x*pug.vel.x+pug.vel.z*pug.vel.z);if(sp<.045){pug.vel.set(0,0,0);sp=0}
+1058:     pug.pos.x+=pug.vel.x*dt;pug.pos.z+=pug.vel.z*dt;collide(pug.pos,.34);pug.move=lerp(pug.move,clamp(sp/3.1,0,1),dt*8);
+1059:     if(sp>.14){pug.phase+=sp*dt*(running?6.2:5.4);pug.yaw=angleLerp(pug.yaw,Math.atan2(pug.vel.x,pug.vel.z),clamp(dt*10,0,1));setPugState('walk');Game.stepDistance+=sp*dt;if(Game.stepDistance>.5){Game.stepDistance=0;AudioManager.playOne(running?'stepsRun':'stepsWalk',.42,120)}}
+1060:     else{if(pug.forcedYaw!==null)pug.yaw=angleLerp(pug.yaw,pug.forcedYaw,dt*6);if(pug.state==='walk')setPugState('idle')}
+1061:     if(Game.quest===1&&pug.pos.x<-3.25){quest(2);activateVacuum()}
+
+--- lines 1058-1062 ---
+1058:     pug.pos.x+=pug.vel.x*dt;pug.pos.z+=pug.vel.z*dt;collide(pug.pos,.34);pug.move=lerp(pug.move,clamp(sp/3.1,0,1),dt*8);
+1059:     if(sp>.14){pug.phase+=sp*dt*(running?6.2:5.4);pug.yaw=angleLerp(pug.yaw,Math.atan2(pug.vel.x,pug.vel.z),clamp(dt*10,0,1));setPugState('walk');Game.stepDistance+=sp*dt;if(Game.stepDistance>.5){Game.stepDistance=0;AudioManager.playOne(running?'stepsRun':'stepsWalk',.42,120)}}
+1060:     else{if(pug.forcedYaw!==null)pug.yaw=angleLerp(pug.yaw,pug.forcedYaw,dt*6);if(pug.state==='walk')setPugState('idle')}
+1061:     if(Game.quest===1&&pug.pos.x<-3.25){quest(2);activateVacuum()}
+1062:     if(Game.quest===6&&Game.smells>=3&&pug.pos.z>-6.8&&!Game.q7Triggered){Game.q7Triggered=true;doors.bedroom.target=1;Game.bedroomOpen=true;removeCollider(bedroomDoorCollider);AudioManager.playOne('door',.7,500);human.target={x:HUMAN_LIVING.x,z:HUMAN_LIVING.z};quest(7);speakMatvey('bedFree','На кровать нельзя только до тех пор, пока никто не видит.')}
+
+--- lines 1066-1070 ---
+1066:   if(Game.quest>=6&&!inSequence&&!Game.inputLocked&&!Game.sleeping){
+1067:     var smell=nearestSmell();
+1068:     if(smell&&actionHeld){setPugState('sniff');smell.progress+=dt/1.8;setHold(smell.progress);AudioManager.playOne('sniff',.38,480);if(smell.progress>=1){smell.done=true;smell.group.visible=false;Game.smells++;updateCounters();setMood(Game.mood+8);setHold(null);AudioManager.playOne('collect',.65,150);speakMatvey(smell.key,smell.text,{force:true});setPugState('idle');if(Game.smells>=3)setQuest('Двор проверен. Возвращайся домой')}}
+1069:     else{setHold(smell?smell.progress:null);if(pug.state==='sniff')setPugState('idle')}
+1070:   }else setHold(null);
+
+--- lines 1067-1071 ---
+1067:     var smell=nearestSmell();
+1068:     if(smell&&actionHeld){setPugState('sniff');smell.progress+=dt/1.8;setHold(smell.progress);AudioManager.playOne('sniff',.38,480);if(smell.progress>=1){smell.done=true;smell.group.visible=false;Game.smells++;updateCounters();setMood(Game.mood+8);setHold(null);AudioManager.playOne('collect',.65,150);speakMatvey(smell.key,smell.text,{force:true});setPugState('idle');if(Game.smells>=3)setQuest('Двор проверен. Возвращайся домой')}}
+1069:     else{setHold(smell?smell.progress:null);if(pug.state==='sniff')setPugState('idle')}
+1070:   }else setHold(null);
+1071:   if(Game.quest===3){Game.q3Timer-=dt;if(Game.q3Timer<=0)quest(4)}
+
+--- lines 1078-1082 ---
+1078:     if(hit){if(Math.abs(vacuum.dir.x)>Math.abs(vacuum.dir.z))vacuum.dir.x*=-1;else vacuum.dir.z*=-1}else vacuum.pos.copy(temp);
+1079:     vacuumRoot.position.copy(vacuum.pos);vacuumRoot.rotation.y+=dt*.8;AudioManager.updateVacuum(Math.sqrt(dist2(vacuum.pos.x,vacuum.pos.z,pug.pos.x,pug.pos.z)));
+1080:     if(Game.bumpCooldown<=0&&!pug.onBed&&dist2(vacuum.pos.x,vacuum.pos.z,pug.pos.x,pug.pos.z)<.39){Game.bumpCooldown=2;Game.vacuumHits++;hapticImpact('medium');if(Game.quest===2&&Game.crumbs>0){Game.crumbs--;dropCrumb();updateCounters()}AudioManager.playOne('snort',.7,400);speakMatvey('vacuumHit','Зафиксировано нападение бытовой техники.');setPugState('hop');startSequence([{duration:.55,tick:function(k){pug.visualY=Math.sin(k*Math.PI)*.34},end:function(){pug.visualY=0;setPugState('idle')}}])}
+1081:   }
+1082:   if(Game.quest>=7&&Game.vacuumActive)dockVacuum();
+
+--- lines 1082-1086 ---
+1082:   if(Game.quest>=7&&Game.vacuumActive)dockVacuum();
+1083:   if(human.target){
+1084:     var dx=human.target.x-humanRoot.position.x,dz=human.target.z-humanRoot.position.z,d=Math.sqrt(dx*dx+dz*dz);
+1085:     if(d>.08){humanRoot.position.x+=dx/d*1.12*dt;humanRoot.position.z+=dz/d*1.12*dt;humanRoot.rotation.y=Math.atan2(dx,dz);human.bob+=dt*8;var sw=Math.sin(human.bob);H.legL.rotation.x=sw*.44;H.legR.rotation.x=-sw*.44;H.armL.rotation.x=-sw*.28;H.armR.rotation.x=sw*.28;humanRoot.position.y=Math.abs(Math.cos(human.bob))*.025}else{human.target=null;humanRoot.position.y=0;human.lookT=1.4}
+1086:   }else{H.legL.rotation.x=lerp(H.legL.rotation.x,0,dt*8);H.legR.rotation.x=lerp(H.legR.rotation.x,0,dt*8);humanRoot.position.y=lerp(humanRoot.position.y,0,dt*8)}
+
+--- lines 1083-1087 ---
+1083:   if(human.target){
+1084:     var dx=human.target.x-humanRoot.position.x,dz=human.target.z-humanRoot.position.z,d=Math.sqrt(dx*dx+dz*dz);
+1085:     if(d>.08){humanRoot.position.x+=dx/d*1.12*dt;humanRoot.position.z+=dz/d*1.12*dt;humanRoot.rotation.y=Math.atan2(dx,dz);human.bob+=dt*8;var sw=Math.sin(human.bob);H.legL.rotation.x=sw*.44;H.legR.rotation.x=-sw*.44;H.armL.rotation.x=-sw*.28;H.armR.rotation.x=sw*.28;humanRoot.position.y=Math.abs(Math.cos(human.bob))*.025}else{human.target=null;humanRoot.position.y=0;human.lookT=1.4}
+1086:   }else{H.legL.rotation.x=lerp(H.legL.rotation.x,0,dt*8);H.legR.rotation.x=lerp(H.legR.rotation.x,0,dt*8);humanRoot.position.y=lerp(humanRoot.position.y,0,dt*8)}
+1087:   if(Game.quest===7&&!Game.sleeping&&!human.target){
+
+--- lines 1089-1093 ---
+1089:     humanRoot.rotation.y=angleLerp(humanRoot.rotation.y,human.yawTarget,dt*4);H.eyeSprite.visible=Game.looking;
+1090:   }else if(Game.quest!==7)H.eyeSprite.visible=false;
+1091:   Object.keys(doors).forEach(function(k){var d=doors[k];d.value=lerp(d.value,d.target,dt*3);d.group.rotation.y=-d.value*1.75});
+1092:   smellPoints.forEach(function(s,index){if(!s.done&&s.group.visible){s.phase+=dt;s.group.rotation.y+=dt*.28;s.ring.scale.setScalar(1+Math.sin(s.phase*2.1)*.08);s.wisps.forEach(function(w,j){w.position.y=.08+j*.095+((s.phase*.18+j*.13)%.34);w.position.x+=Math.sin(s.phase*1.7+j)*dt*.025;w.material.opacity=.16+.18*Math.max(0,Math.sin(s.phase*2+j))})}});
+1093:   arrowClock+=dt;updateArrow();
+
+--- lines 1090-1094 ---
+1090:   }else if(Game.quest!==7)H.eyeSprite.visible=false;
+1091:   Object.keys(doors).forEach(function(k){var d=doors[k];d.value=lerp(d.value,d.target,dt*3);d.group.rotation.y=-d.value*1.75});
+1092:   smellPoints.forEach(function(s,index){if(!s.done&&s.group.visible){s.phase+=dt;s.group.rotation.y+=dt*.28;s.ring.scale.setScalar(1+Math.sin(s.phase*2.1)*.08);s.wisps.forEach(function(w,j){w.position.y=.08+j*.095+((s.phase*.18+j*.13)%.34);w.position.x+=Math.sin(s.phase*1.7+j)*dt*.025;w.material.opacity=.16+.18*Math.max(0,Math.sin(s.phase*2+j))})}});
+1093:   arrowClock+=dt;updateArrow();
+1094:   if(Game.quest>=2&&Game.quest<=6&&!sequence){Game.ambientTimer-=dt;if(Game.ambientTimer<=0){Game.ambientTimer=rand(20,34);speakMatvey('random'+Math.floor(Math.random()*99),rareLines[Math.floor(Math.random()*rareLines.length)])}}
+
+--- lines 1104-1108 ---
+1104: }
+1105: function openFinale(){
+1106:   Game.mode='finale';Game.erzIdle=0;setClosingConfirmation(false);$('fin-crumbs').textContent=Game.crumbs+' / 10';$('fin-smells').textContent=Game.smells+' / 3';$('fin-time').textContent=fmtTime(Game.finalTime);$('fin-vacuum').textContent=Game.vacuumHits;$('fin-attempts').textContent=Game.bedAttempts;
+1107:   if(bestTime===null||Game.finalTime<bestTime){bestTime=Game.finalTime;saveBest()}if(Game.vacuumHits===0)unlockAchievement('hitry');if(Game.tokenFound)unlockAchievement('king');setPrompt(null);$('watch-ind').classList.add('hidden');showScreen('screen-finale');speakMatvey('finale','День прожит не зря. Рассол может спать спокойно.',{force:true});
+1108: }
+
+--- lines 1109-1113 ---
+1109: function resetGame(){
+1110:   pendingTimers.forEach(clearTimeout);pendingTimers.length=0;stopVoice();AudioManager.stopAll();sequence=null;resetInput();
+1111:   Object.assign(Game,{mode:'menu',paused:false,inputLocked:true,quest:0,crumbs:0,smells:0,mood:40,time:0,finalTime:0,vacuumHits:0,bedAttempts:0,hasLeash:false,leashPicked:false,leashDropped:false,tokenFound:false,doorSequence:false,frontOpen:false,bedroomOpen:false,looking:false,sleeping:false,finished:false,sleepT:0,snoreT:0,erzIdle:0,erzUnlocked:false,vacuumActive:false,q3Timer:0,ambientTimer:20,stepDistance:0,bumpCooldown:0,q7Triggered:false,area:'home'});
+1112:   crumbs.forEach(function(c){c.taken=false;c.x=c.sx;c.z=c.sz;c.mesh.visible=true;c.mesh.position.set(c.sx,.11,c.sz)});
+1113:   token.visible=true;leashWorld.visible=true;leashWorld.position.set(9.45,1,-4.3);leashWorld.rotation.set(0,0,0);P.leashCarry.visible=false;
+
+--- lines 1117-1121 ---
+1117:   pug.pos.set(.6,0,-1.4);pug.vel.set(0,0,0);pug.yaw=-Math.PI/2;pug.groundY=0;pug.visualY=0;pug.onBed=false;pug.forcedYaw=null;pug.move=0;pug.jolt=0;pug.digClock=0;pug.settle=0;proceduralPug.visible=!glb.active;setPugState('lie');pugRoot.position.set(.6,0,-1.4);pugRoot.rotation.y=pug.yaw;
+1118:   cam.yaw=-2.4;cam.pitch=.32;cam.distance=4.35;cam.focus.set(.6,.47,-1.4);cam.look.copy(cam.focus);camera.position.set(3.7,2.0,2.1);
+1119:   setMood(40);updateCounters();setQuest('…');setPrompt(null);setHold(null);$('watch-ind').classList.add('hidden');$('fade').classList.remove('on');$('hud').classList.add('hidden');pausedByOrientation=false;
+1120: }
+1121: function pauseGame(){
+
+--- lines 1120-1124 ---
+1120: }
+1121: function pauseGame(){
+1122:   if(Game.mode!=='playing'||Game.paused)return;resetInput();Game.paused=true;AudioManager.pauseAll();stopVoice();showScreen('screen-pause');
+1123: }
+1124: function resumeGame(){
+
+--- lines 1123-1127 ---
+1123: }
+1124: function resumeGame(){
+1125:   Game.paused=false;showScreen(null);lastFrame=nowMs();AudioManager.resumeLoops();
+1126: }
+1127: 
+
+--- lines 1142-1146 ---
+1142: function toMenu(){setClosingConfirmation(false);resetGame();refreshBest();showScreen('screen-start')}
+1143: $('btn-quit').addEventListener('click',toMenu);$('btn-menu').addEventListener('click',toMenu);
+1144: $('btn-pause').addEventListener('click',function(){if(Game.mode==='playing'){if(Game.paused)resumeGame();else pauseGame()}});
+1145: $('btn-mute').addEventListener('click',function(){if(settings.sound){settings.sound=false;saveSettings();AudioManager.pauseAll();stopVoice();syncSettings()}else enableSoundFromGesture(true)});
+1146: $('set-sound').addEventListener('click',function(){if(settings.sound){settings.sound=false;AudioManager.pauseAll();stopVoice();saveSettings();syncSettings()}else enableSoundFromGesture(false)});
+
+--- lines 1154-1158 ---
+1154: var portraitMedia=matchMedia('(orientation: portrait)');
+1155: function checkOrientation(){
+1156:   var portrait=IS_TOUCH&&innerHeight>innerWidth;$('portrait-warning').classList.toggle('hidden',!portrait);
+1157:   if(portrait){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation){pausedByOrientation=true;resetInput();AudioManager.pauseAll();stopVoice()}if(tgBack&&!portraitBackHidden){try{tgBack.hide()}catch(error){}portraitBackHidden=true}}
+1158:   else{if(pausedByOrientation){pausedByOrientation=false;lastFrame=nowMs();TelegramApp.lockLandscape();AudioManager.resumeLoops()}if(portraitBackHidden){portraitBackHidden=false;updateBack()}}
+
+--- lines 1155-1159 ---
+1155: function checkOrientation(){
+1156:   var portrait=IS_TOUCH&&innerHeight>innerWidth;$('portrait-warning').classList.toggle('hidden',!portrait);
+1157:   if(portrait){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation){pausedByOrientation=true;resetInput();AudioManager.pauseAll();stopVoice()}if(tgBack&&!portraitBackHidden){try{tgBack.hide()}catch(error){}portraitBackHidden=true}}
+1158:   else{if(pausedByOrientation){pausedByOrientation=false;lastFrame=nowMs();TelegramApp.lockLandscape();AudioManager.resumeLoops()}if(portraitBackHidden){portraitBackHidden=false;updateBack()}}
+1159: }
+
+--- lines 1156-1160 ---
+1156:   var portrait=IS_TOUCH&&innerHeight>innerWidth;$('portrait-warning').classList.toggle('hidden',!portrait);
+1157:   if(portrait){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation){pausedByOrientation=true;resetInput();AudioManager.pauseAll();stopVoice()}if(tgBack&&!portraitBackHidden){try{tgBack.hide()}catch(error){}portraitBackHidden=true}}
+1158:   else{if(pausedByOrientation){pausedByOrientation=false;lastFrame=nowMs();TelegramApp.lockLandscape();AudioManager.resumeLoops()}if(portraitBackHidden){portraitBackHidden=false;updateBack()}}
+1159: }
+1160: function applyRendererSize(){var dpr=Math.min(devicePixelRatio||1,1.85),scale=settings.quality==='low'?.62:settings.quality==='medium'?.8:.95;renderer.setPixelRatio(dpr*scale);renderer.setSize(innerWidth,innerHeight,false)}
+
+--- lines 1163-1167 ---
+1163: window.addEventListener('resize',resize);window.addEventListener('orientationchange',function(){setTimeout(resize,120)});
+1164: if(portraitMedia.addEventListener)portraitMedia.addEventListener('change',checkOrientation);else portraitMedia.addListener(checkOrientation);
+1165: document.addEventListener('visibilitychange',function(){if(document.hidden&&Game.mode==='playing'&&!Game.paused&&!pausedByOrientation)pauseGame()});
+1166: window.addEventListener('blur',function(){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation)pauseGame()});
+1167: renderer.domElement.addEventListener('webglcontextlost',function(e){e.preventDefault();pauseGame();window.__fatal('3D-контекст был потерян. Обновите страницу, чтобы продолжить.')},false);
+
+--- lines 1164-1168 ---
+1164: if(portraitMedia.addEventListener)portraitMedia.addEventListener('change',checkOrientation);else portraitMedia.addListener(checkOrientation);
+1165: document.addEventListener('visibilitychange',function(){if(document.hidden&&Game.mode==='playing'&&!Game.paused&&!pausedByOrientation)pauseGame()});
+1166: window.addEventListener('blur',function(){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation)pauseGame()});
+1167: renderer.domElement.addEventListener('webglcontextlost',function(e){e.preventDefault();pauseGame();window.__fatal('3D-контекст был потерян. Обновите страницу, чтобы продолжить.')},false);
+1168: 
+
+--- lines 1173-1177 ---
+1173:   if(screenOpen('screen-controls')||screenOpen('screen-achievements')){showScreen('screen-start');return}
+1174:   if(screenOpen('screen-finale')||screenOpen('screen-pause')){toMenu();return}
+1175:   if(Game.mode==='playing'){if(Game.paused)resumeGame();else pauseGame()}
+1176: }
+1177: function setupHomeButton(){
+
+--- lines 1184-1188 ---
+1184:   try{
+1185:     ['viewportChanged','safeAreaChanged','contentSafeAreaChanged','fullscreenChanged'].forEach(function(name){tg.onEvent(name,resize)});
+1186:     tg.onEvent('deactivated',function(){if(Game.mode==='playing'&&!Game.paused&&!pausedByOrientation)pauseGame();AudioManager.pauseAll()});
+1187:     tg.onEvent('activated',resize);
+1188:     if(tg.BackButton){tgBack=tg.BackButton;tgBack.onClick(handleBack);tgBack.hide()}
+
+--- lines 1196-1200 ---
+1196:   if(Game.mode!=='playing'&&action!=='finale'){resetGame();if(settings.sound)AudioManager.unlock();startGame()}
+1197:   if(action==='crumbs'){crumbs.forEach(function(c){c.taken=true;c.mesh.visible=false});Game.crumbs=10;updateCounters();quest(4)}
+1198:   if(action==='human'){quest(4);pug.pos.set(humanRoot.position.x+1,0,humanRoot.position.z+.4)}
+1199:   if(action==='leash'){quest(5);Game.leashPicked=true;Game.hasLeash=true;leashWorld.visible=false;P.leashCarry.visible=true}
+1200:   if(action==='yard'){doors.front.target=1;Game.frontOpen=true;removeCollider(frontDoorCollider);quest(6);pug.pos.set(5.8,0,-8.3)}
+
+--- lines 1212-1216 ---
+1212: /* Main loop */
+1213: function frame(now){
+1214:   requestAnimationFrame(frame);var dt=(now-lastFrame)/1000;lastFrame=now;if(dt>.05)dt=.05;
+1215:   if(!Game.paused&&!pausedByOrientation){
+1216:     if(Game.mode==='playing')updatePlaying(dt);
+
+--- lines 1213-1217 ---
+1213: function frame(now){
+1214:   requestAnimationFrame(frame);var dt=(now-lastFrame)/1000;lastFrame=now;if(dt>.05)dt=.05;
+1215:   if(!Game.paused&&!pausedByOrientation){
+1216:     if(Game.mode==='playing')updatePlaying(dt);
+1217:     else if(Game.mode==='menu'){animatePug(dt);updateCamera(dt)}
+
+--- lines 1216-1220 ---
+1216:     if(Game.mode==='playing')updatePlaying(dt);
+1217:     else if(Game.mode==='menu'){animatePug(dt);updateCamera(dt)}
+1218:     else if(Game.mode==='finale'){animatePug(dt);Game.snoreT-=dt;if(Game.snoreT<=0){Game.snoreT=rand(3,4.5);pug.jolt=1;AudioManager.playOne('snore',.45,2200)}Game.erzIdle+=dt;if(Game.erzIdle>=20&&!Game.erzUnlocked){Game.erzUnlocked=true;unlockAchievement('erzhan')}updateCamera(dt);updateParticles(dt)}
+1219:   }
+1220:   renderer.render(scene,camera);
+
+--- lines 1222-1226 ---
+1222: 
+1223: /* Start */
+1224: tryLoadGlb();resetGame();applyQuality();syncSettings();refreshBest();resize();setupTelegram();checkOrientation();requestAnimationFrame(function(t){lastFrame=t;frame(t)});
+1225: })();
+1226: 
